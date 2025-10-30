@@ -1,11 +1,12 @@
-import type { Metadata } from "next";
 import { cn } from "@/lib/utils";
-import "./globals.css";
 import { ThemeProvider } from "@/Providers/ThemeProvider";
+
+import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Expense Tracker",
-  description: "This is an app to track expense of a user.",
+  description: "Track your expenses and income with ease",
 };
 
 export default function RootLayout({
