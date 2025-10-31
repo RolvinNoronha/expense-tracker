@@ -8,6 +8,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import TransactionsSection from "@/components/TransactionSection";
 import AnalyticsSection from "@/components/AnalyticsSection";
 import AddTransactionModal from "@/components/AddTransactionModal";
+import { useAuth } from "@/Providers/AuthProvider";
 
 interface Transaction {
   id: string;
@@ -19,14 +20,14 @@ interface Transaction {
 }
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
     // Check if user is authenticated
-    const authToken = localStorage.getItem("authToken");
-    if (!authToken) {
+    if (!user) {
       router.push("/login");
       return;
     }

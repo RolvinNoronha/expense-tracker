@@ -1,19 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, TrendingUp, PieChart, BarChart3, Zap } from "lucide-react";
+import { useAuth } from "@/Providers/AuthProvider";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const LandingPage = () => {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    const authToken = localStorage.getItem("authToken");
-    setIsAuthenticated(!!authToken);
-  }, []);
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,7 +25,7 @@ const LandingPage = () => {
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            {isAuthenticated ? (
+            {user ? (
               <Button
                 onClick={() => router.push("/dashboard")}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -62,7 +57,7 @@ const LandingPage = () => {
               spending habits and make smarter financial decisions.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              {isAuthenticated ? (
+              {user ? (
                 <Button
                   onClick={() => router.push("/dashboard")}
                   size="lg"
@@ -194,7 +189,7 @@ const LandingPage = () => {
             Start tracking your expenses today and gain complete visibility into
             your financial health.
           </p>
-          {isAuthenticated ? (
+          {user ? (
             <Button
               onClick={() => router.push("/dashboard")}
               size="lg"

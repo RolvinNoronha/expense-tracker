@@ -68,7 +68,7 @@ const AddTransactionModal = ({
     ? categories[category as keyof typeof categories] || []
     : [];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!category || !subCategory || !amount) {
@@ -85,6 +85,18 @@ const AddTransactionModal = ({
       amount: Number.parseFloat(amount),
       date,
     });
+
+    const bodyContent = JSON.stringify({
+      type,
+      category,
+      subCategory,
+      thirdCategory,
+      description,
+      amount: Number.parseFloat(amount),
+      date,
+    });
+
+    console.log(bodyContent);
 
     // Reset form
     setCategory("");

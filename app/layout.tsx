@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/Providers/ThemeProvider";
 
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/Providers/AuthProvider";
 
 export const metadata: Metadata = {
   title: "Expense Tracker",
@@ -17,9 +18,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={cn("min-h-screen bg-background font-sans antialiased")}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            {children}
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

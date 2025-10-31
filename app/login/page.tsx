@@ -15,8 +15,10 @@ import {
 } from "@/components/ui/card";
 import ThemeToggle from "@/components/ThemeToggle";
 import { AlertCircle } from "lucide-react";
+import { useAuth } from "@/Providers/AuthProvider";
 
 export default function LoginPage() {
+  const { login } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,11 +30,8 @@ export default function LoginPage() {
     setError("");
     setIsLoading(true);
 
-    // Simulate login - in production, this would call an API
     if (email && password) {
-      // Store a simple auth token in localStorage
-      localStorage.setItem("authToken", "demo-token-" + Date.now());
-      localStorage.setItem("userEmail", email);
+      await login(email, password);
       router.push("/dashboard");
     } else {
       setError("Please enter both email and password");

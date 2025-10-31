@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# service account credentials
+expense-tracker-6f0b8-a36f2b9e0811.json

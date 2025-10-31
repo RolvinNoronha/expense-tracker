@@ -1,16 +1,17 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import ThemeToggle from "@/components/ThemeToggle";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/Providers/AuthProvider";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const DashboardNav = () => {
+  const { logout } = useAuth();
   const router = useRouter();
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userEmail");
+    logout();
     router.push("/login");
   };
 
