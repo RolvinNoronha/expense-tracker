@@ -19,41 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { AlertCircle, Plus } from "lucide-react";
+import categories from "@/lib/categories";
 
-interface AddTransactionModalProps {
-  onAddTransaction?: (transaction: {
-    type: "income" | "expense";
-    category: string;
-    subCategory: string;
-    thirdCategory?: string;
-    description: string;
-    amount: number;
-    date: string;
-  }) => void;
-}
-
-const EXPENSE_CATEGORIES = {
-  Food: ["Groceries", "Restaurants", "Delivery"],
-  Rent: ["Apartment", "House", "Storage"],
-  Entertainment: ["Movies", "Games", "Events"],
-  Utilities: ["Electricity", "Water", "Internet"],
-  Transportation: ["Gas", "Public Transit", "Parking"],
-  Healthcare: ["Doctor", "Pharmacy", "Dental"],
-  Shopping: ["Clothing", "Electronics", "Home"],
-  Other: ["Miscellaneous"],
-};
-
-const INCOME_CATEGORIES = {
-  Salary: ["Monthly", "Bonus", "Overtime"],
-  Freelance: ["Projects", "Consulting", "Gigs"],
-  Investment: ["Dividends", "Interest", "Capital Gains"],
-  Other: ["Gifts", "Refunds", "Miscellaneous"],
-};
-
-const AddTransactionModal = ({
-  onAddTransaction,
-}: AddTransactionModalProps) => {
+const AddTransactionModal = () => {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<"income" | "expense">("expense");
   const [category, setCategory] = useState("");
@@ -62,29 +31,22 @@ const AddTransactionModal = ({
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [error, setError] = useState<string>("");
 
-  const categories = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-  const subCategories = category
-    ? categories[category as keyof typeof categories] || []
-    : [];
+  const capitalizeWords = (str: string) => {
+    return str
+      .split(/[-\s]/) // Split by spaces or hyphens
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" "); // Join back with hyphens
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!category || !subCategory || !amount) {
-      alert("Please fill in all required fields");
+    if (!category || !subCategory || !amount || !date) {
+      setError("Please fill all the required fields.");
       return;
     }
-
-    onAddTransaction?.({
-      type,
-      category,
-      subCategory,
-      thirdCategory,
-      description,
-      amount: Number.parseFloat(amount),
-      date,
-    });
 
     const bodyContent = JSON.stringify({
       type,
@@ -126,6 +88,13 @@ const AddTransactionModal = ({
           </DialogDescription>
         </DialogHeader>
 
+        {error && (
+          <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Transaction Type */}
           <div className="space-y-2">
@@ -156,6 +125,7 @@ const AddTransactionModal = ({
               onValueChange={(value) => {
                 setCategory(value);
                 setSubCategory("");
+                setError("");
               }}
             >
               <SelectTrigger>
@@ -164,7 +134,7 @@ const AddTransactionModal = ({
               <SelectContent>
                 {Object.keys(categories).map((cat) => (
                   <SelectItem key={cat} value={cat}>
-                    {cat}
+                    {capitalizeWords(cat)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -172,19 +142,27 @@ const AddTransactionModal = ({
           </div>
 
           {/* Sub-Category */}
-          {subCategories.length > 0 && (
+          {category.length > 0 && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Sub-Category</label>
-              <Select value={subCategory} onValueChange={setSubCategory}>
+              <Select
+                value={subCategory}
+                onValueChange={(value) => {
+                  setSubCategory(value);
+                  setError("");
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a sub-category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {subCategories.map((subCat) => (
-                    <SelectItem key={subCat} value={subCat}>
-                      {subCat}
-                    </SelectItem>
-                  ))}
+                  {categories[category as keyof typeof categories].map(
+                    (subCat) => (
+                      <SelectItem key={subCat} value={subCat}>
+                        {capitalizeWords(subCat)}
+                      </SelectItem>
+                    )
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -209,7 +187,10 @@ const AddTransactionModal = ({
               type="number"
               placeholder="0.00"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => {
+                setAmount(e.target.value);
+                setError("");
+              }}
               step="0.01"
               min="0"
               required
@@ -234,7 +215,10 @@ const AddTransactionModal = ({
             <Input
               type="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={(e) => {
+                setDate(e.target.value);
+                setError("");
+              }}
               required
             />
           </div>

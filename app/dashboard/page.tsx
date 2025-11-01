@@ -9,6 +9,7 @@ import TransactionsSection from "@/components/TransactionSection";
 import AnalyticsSection from "@/components/AnalyticsSection";
 import AddTransactionModal from "@/components/AddTransactionModal";
 import { useAuth } from "@/Providers/AuthProvider";
+import { auth } from "@/firebase/firebase";
 
 interface Transaction {
   id: string;
@@ -31,6 +32,13 @@ export default function DashboardPage() {
       router.push("/login");
       return;
     }
+
+    const printToken = async () => {
+      const token = await auth.currentUser?.getIdToken();
+      console.log(token);
+    };
+
+    printToken();
 
     // Load sample data
     const sampleTransactions: Transaction[] = [
@@ -176,7 +184,7 @@ export default function DashboardPage() {
           <AnalyticsSection transactions={transactions} />
         </div>
       </main>
-      <AddTransactionModal onAddTransaction={handleAddTransaction} />
+      <AddTransactionModal />
     </div>
   );
 }

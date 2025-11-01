@@ -49,7 +49,7 @@ const TrendChart = ({ data }: TrendChartProps) => {
               formatter={(value) =>
                 new Intl.NumberFormat("en-US", {
                   style: "currency",
-                  currency: "USD",
+                  currency: "INR",
                   minimumFractionDigits: 0,
                 }).format(value as number)
               }
