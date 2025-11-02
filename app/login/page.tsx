@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import ThemeToggle from "@/components/ThemeToggle";
 import { AlertCircle } from "lucide-react";
-import { useAuth } from "@/Providers/AuthProvider";
+import { useAuth } from "@/providers/AuthProvider";
 
 export default function LoginPage() {
   const { login } = useAuth();

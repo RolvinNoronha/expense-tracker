@@ -14,10 +14,18 @@ export function withAuth(handler: Handler): Handler {
   return async (req, context) => {
     const token = req.headers.get("authorization")?.split("Bearer ")[1];
     if (!token) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Unothorized",
+          data: {},
+          errors: {},
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     try {
@@ -32,7 +40,12 @@ export function withAuth(handler: Handler): Handler {
     } catch (error) {
       console.error("Error verifying Firebase ID token:", error);
       return new Response(
-        JSON.stringify({ error: "Forbidden. Invalid token." }),
+        JSON.stringify({
+          success: false,
+          message: "Forbidden. Invalid token.",
+          data: {},
+          errors: { error },
+        }),
         {
           status: 403,
           headers: { "Content-Type": "application/json" },

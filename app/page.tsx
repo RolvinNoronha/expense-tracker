@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, TrendingUp, PieChart, BarChart3, Zap } from "lucide-react";
-import { useAuth } from "@/Providers/AuthProvider";
+import { useAuth } from "@/providers/AuthProvider";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const LandingPage = () => {

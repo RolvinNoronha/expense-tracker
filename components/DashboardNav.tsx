@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/Providers/AuthProvider";
+import { useAuth } from "@/providers/AuthProvider";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const DashboardNav = () => {

@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import "./globals.css";
 
-import Providers from "@/Providers/Providers";
+import Providers from "@/providers/Providers";
 
 export const metadata: Metadata = {
   title: "Expense Tracker",

@@ -2,29 +2,35 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/providers/AuthProvider";
+import { auth } from "@/firebase/firebase";
+import { Transaction } from "@/store/interfaces";
 
 import DashboardNav from "@/components/DashboardNav";
 import DashboardHeader from "@/components/DashboardHeader";
 import TransactionsSection from "@/components/TransactionSection";
 import AnalyticsSection from "@/components/AnalyticsSection";
 import AddTransactionModal from "@/components/AddTransactionModal";
-import { useAuth } from "@/Providers/AuthProvider";
-import { auth } from "@/firebase/firebase";
+import { useFetchBalance } from "@/hooks/hooks";
+import useBalanceStore from "@/store/balance-store";
 
-interface Transaction {
-  id: string;
-  type: "income" | "expense";
-  category: string;
-  amount: number;
-  description: string;
-  date: string;
-}
+type BalanceData = {
+  expense: number;
+  income: number;
+  balance: number;
+};
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { updateBalance } = useBalanceStore();
+
+  const [balanceData, setBalanceData] = useState<BalanceData>({
+    balance: 0,
+    expense: 0,
+    income: 0,
+  });
+  const { data, isPending } = useFetchBalance();
 
   useEffect(() => {
     // Check if user is authenticated
@@ -40,126 +46,17 @@ export default function DashboardPage() {
 
     printToken();
 
-    // Load sample data
-    const sampleTransactions: Transaction[] = [
-      {
-        id: "1",
-        type: "income",
-        category: "Salary",
-        amount: 5000,
-        description: "Monthly salary",
-        date: new Date().toISOString(),
-      },
-      {
-        id: "2",
-        type: "expense",
-        category: "Food",
-        amount: 150,
-        description: "Groceries",
-        date: new Date().toISOString(),
-      },
-      {
-        id: "3",
-        type: "expense",
-        category: "Rent",
-        amount: 1200,
-        description: "Monthly rent",
-        date: new Date().toISOString(),
-      },
-      {
-        id: "4",
-        type: "income",
-        category: "Freelance",
-        amount: 800,
-        description: "Project payment",
-        date: new Date().toISOString(),
-      },
-      {
-        id: "5",
-        type: "expense",
-        category: "Entertainment",
-        amount: 50,
-        description: "Movie tickets",
-        date: new Date().toISOString(),
-      },
-      {
-        id: "6",
-        type: "expense",
-        category: "Utilities",
-        amount: 120,
-        description: "Electricity bill",
-        date: new Date(Date.now() - 86400000).toISOString(),
-      },
-      {
-        id: "7",
-        type: "expense",
-        category: "Transportation",
-        amount: 80,
-        description: "Gas",
-        date: new Date(Date.now() - 172800000).toISOString(),
-      },
-      {
-        id: "8",
-        type: "income",
-        category: "Investment",
-        amount: 250,
-        description: "Dividend payment",
-        date: new Date(Date.now() - 259200000).toISOString(),
-      },
-      {
-        id: "9",
-        type: "expense",
-        category: "Healthcare",
-        amount: 100,
-        description: "Doctor visit",
-        date: new Date(Date.now() - 345600000).toISOString(),
-      },
-      {
-        id: "10",
-        type: "expense",
-        category: "Shopping",
-        amount: 200,
-        description: "Clothing",
-        date: new Date(Date.now() - 432000000).toISOString(),
-      },
-    ];
+    if (data) {
+      const income = data?.data.balance.totalIncome;
+      const expense = data.data.balance.totalExpense;
+      const balance = income - expense;
 
-    setTransactions(sampleTransactions);
-    setIsLoading(false);
-  }, [router]);
+      setBalanceData({ income, expense, balance });
+      updateBalance(data.data.balance);
+    }
+  }, [router, data]);
 
-  const handleAddTransaction = (newTransaction: {
-    type: "income" | "expense";
-    category: string;
-    subCategory: string;
-    thirdCategory?: string;
-    description: string;
-    amount: number;
-    date: string;
-  }) => {
-    const transaction: Transaction = {
-      id: Date.now().toString(),
-      type: newTransaction.type,
-      category: newTransaction.category,
-      amount: newTransaction.amount,
-      description: newTransaction.description || newTransaction.subCategory,
-      date: newTransaction.date,
-    };
-
-    setTransactions([transaction, ...transactions]);
-  };
-
-  const income = transactions
-    .filter((t) => t.type === "income")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const expenses = transactions
-    .filter((t) => t.type === "expense")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const balance = income - expenses;
-
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -176,12 +73,12 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
           <DashboardHeader
-            balance={balance}
-            income={income}
-            expenses={expenses}
+            balance={balanceData.balance}
+            income={balanceData.income}
+            expenses={balanceData.expense}
           />
-          <TransactionsSection transactions={transactions} />
-          <AnalyticsSection transactions={transactions} />
+          <TransactionsSection />
+          <AnalyticsSection />
         </div>
       </main>
       <AddTransactionModal />

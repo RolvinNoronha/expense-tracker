@@ -19,10 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertCircle, Plus } from "lucide-react";
+import { AlertCircle, LoaderCircleIcon, Plus } from "lucide-react";
+import { AddTransaction } from "@/store/interfaces";
+import { toast } from "sonner";
+import AppService from "@/services/AppService";
 import categories from "@/lib/categories";
+import useBalanceStore from "@/store/balance-store";
 
 const AddTransactionModal = () => {
+  const { balance } = useBalanceStore();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<"income" | "expense">("expense");
   const [category, setCategory] = useState("");
@@ -32,6 +37,7 @@ const AddTransactionModal = () => {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [error, setError] = useState<string>("");
+  const [adding, setAdding] = useState<boolean>(false);
 
   const capitalizeWords = (str: string) => {
     return str
@@ -47,27 +53,40 @@ const AddTransactionModal = () => {
       setError("Please fill all the required fields.");
       return;
     }
+    const addtransaction: AddTransaction = {
+      amount: Number(amount),
+      category: category,
+      date: new Date(date),
+      description: description,
+      subcategory: subCategory,
+      thirdCategory: thirdCategory ?? "",
+      type: type,
+    };
 
-    const bodyContent = JSON.stringify({
-      type,
-      category,
-      subCategory,
-      thirdCategory,
-      description,
-      amount: Number.parseFloat(amount),
-      date,
-    });
-
-    console.log(bodyContent);
-
-    // Reset form
-    setCategory("");
-    setSubCategory("");
-    setThirdCategory("");
-    setDescription("");
-    setAmount("");
-    setDate(new Date().toISOString().split("T")[0]);
-    setOpen(false);
+    setAdding(true);
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    console.log(addtransaction);
+    try {
+      const result = await AppService.addTransaction(
+        addtransaction,
+        balance?.balanceId
+      );
+      if (result.success) {
+        setCategory("");
+        setSubCategory("");
+        setThirdCategory("");
+        setDescription("");
+        setAmount("");
+        setDate(new Date().toISOString().split("T")[0]);
+        toast.success("Successfully added transaction");
+        setOpen(false);
+      }
+    } catch (error) {
+      toast.error("Failed to add transaction");
+      console.error("Failed to add transaction: ", error);
+    } finally {
+      setAdding(false);
+    }
   };
 
   return (
@@ -80,21 +99,19 @@ const AddTransactionModal = () => {
           <Plus className="h-6 w-6" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Add New Transaction</DialogTitle>
           <DialogDescription>
             Record a new income or expense transaction
           </DialogDescription>
         </DialogHeader>
-
         {error && (
           <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
-
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Transaction Type */}
           <div className="space-y-2">
@@ -226,6 +243,7 @@ const AddTransactionModal = () => {
           {/* Buttons */}
           <div className="flex gap-3 pt-4">
             <Button
+              disabled={adding}
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
@@ -234,13 +252,15 @@ const AddTransactionModal = () => {
               Cancel
             </Button>
             <Button
+              disabled={adding}
               type="submit"
               className="flex-1 bg-primary hover:bg-primary/90"
             >
-              Save Transaction
+              {adding ? <LoaderCircleIcon className="animate-spin" /> : null}
+              {adding ? "Saving Transaction..." : "Save Transaction"}
             </Button>
           </div>
-        </form>
+        </form>{" "}
       </DialogContent>
     </Dialog>
   );

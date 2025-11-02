@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -17,6 +16,8 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  Line,
+  LineChart,
 } from "recharts";
 import {
   Select,
@@ -25,24 +26,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import useTimeRangeStore from "@/store/time-range-store";
+import { Transaction } from "@/store/interfaces";
+import { useFetchTransactionsDays } from "@/hooks/hooks";
+import { useEffect, useState } from "react";
 
-interface AnalyticsSectionProps {
-  transactions: Array<{
-    id: string;
-    type: "income" | "expense";
-    category: string;
-    amount: number;
-    description: string;
-    date: string;
-  }>;
-}
+const AnalyticsSection = () => {
+  const { updatedRange, range } = useTimeRangeStore();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
-const AnalyticsSection = ({ transactions }: AnalyticsSectionProps) => {
-  const [timeRange, setTimeRange] = useState("30");
+  const { data, isPending } = useFetchTransactionsDays(range);
+
+  useEffect(() => {
+    if (data) {
+      setTransactions(data.data.transactions);
+    }
+  }, [data]);
 
   // Generate time-based bar chart data
   const generateTimeBasedData = () => {
-    const days = Number.parseInt(timeRange);
+    const days = range;
     const data = [];
 
     for (let i = days - 1; i >= 0; i--) {
@@ -91,11 +94,114 @@ const AnalyticsSection = ({ transactions }: AnalyticsSectionProps) => {
     }));
   };
 
+  const generateTrendData = () => {
+    const data = [];
+    for (let i = range - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+
+      // Simulate trend data
+      const income = Math.floor(Math.random() * 2000) + 500;
+      const expenses = Math.floor(Math.random() * 1500) + 300;
+
+      data.push({
+        date: dateStr,
+        income,
+        expenses,
+      });
+    }
+    return data;
+  };
+
   const timeBasedData = generateTimeBasedData();
   const categoryData = generateCategoryData();
+  const trendData = generateTrendData();
+
+  if (isPending) {
+    return (
+      <div className="h-full bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* Trend Chart */}
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>30-Day Trend</CardTitle>
+              <CardDescription>
+                Income and expenses over the last 30 days
+              </CardDescription>
+            </div>
+            <Select
+              value={String(range)}
+              onValueChange={(value) => updatedRange(Number(value))}
+            >
+              <SelectTrigger className="w-36 h-10 z-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Last 7 days</SelectItem>
+                <SelectItem value="14">Last 14 days</SelectItem>
+                <SelectItem value="30">Last 30 days</SelectItem>
+                <SelectItem value="90">Last 90 days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="date" stroke="var(--muted-foreground)" />
+              <YAxis stroke="var(--muted-foreground)" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius)",
+                }}
+                formatter={(value) =>
+                  new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: "INR",
+                    minimumFractionDigits: 0,
+                  }).format(value as number)
+                }
+              />
+              <Line
+                type="monotone"
+                dataKey="income"
+                stroke="#16a34a"
+                strokeWidth={2}
+                dot={false}
+                name="Income"
+              />
+              <Line
+                type="monotone"
+                dataKey="expenses"
+                stroke="#dc2626"
+                strokeWidth={2}
+                dot={false}
+                name="Expenses"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
       {/* Time-based Bar Chart */}
       <Card>
         <CardHeader>
@@ -106,8 +212,11 @@ const AnalyticsSection = ({ transactions }: AnalyticsSectionProps) => {
                 Daily breakdown for the selected period
               </CardDescription>
             </div>
-            <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-32">
+            <Select
+              value={String(range)}
+              onValueChange={(value) => updatedRange(Number(value))}
+            >
+              <SelectTrigger className="w-36">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -160,10 +269,28 @@ const AnalyticsSection = ({ transactions }: AnalyticsSectionProps) => {
       {/* Category-based Bar Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Expenses by Category</CardTitle>
-          <CardDescription>
-            Breakdown of spending across different categories
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Expenses by Category</CardTitle>
+              <CardDescription>
+                Breakdown of spending across different categories
+              </CardDescription>
+            </div>
+            <Select
+              value={String(range)}
+              onValueChange={(value) => updatedRange(Number(value))}
+            >
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Last 7 days</SelectItem>
+                <SelectItem value="14">Last 14 days</SelectItem>
+                <SelectItem value="30">Last 30 days</SelectItem>
+                <SelectItem value="90">Last 90 days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           {categoryData.length === 0 ? (
