@@ -5,7 +5,7 @@ export const useFetchTransactions = () =>
   useInfiniteQuery({
     queryKey: ["transactions"],
     queryFn: ({ pageParam }: { pageParam?: string }) =>
-      AppService.getTransactions(20, pageParam),
+      AppService.getTransactions(pageParam),
     initialPageParam: undefined,
     getNextPageParam: (lastPage) =>
       lastPage.data.hasMore ? lastPage.data.lastTransactionId : undefined,
@@ -14,7 +14,7 @@ export const useFetchTransactions = () =>
 export const useFetchTenTransactions = () =>
   useQuery({
     queryKey: ["ten-transactions"],
-    queryFn: () => AppService.getTransactions(10, undefined),
+    queryFn: () => AppService.getTenTransactions(),
   });
 
 export const useFetchTransactionsDays = (days: number) =>

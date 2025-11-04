@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
 import { auth } from "@/firebase/firebase";
-import { Transaction } from "@/store/interfaces";
 
 import DashboardNav from "@/components/DashboardNav";
 import DashboardHeader from "@/components/DashboardHeader";

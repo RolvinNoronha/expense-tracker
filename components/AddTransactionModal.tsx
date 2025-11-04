@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import AppService from "@/services/AppService";
 import categories from "@/lib/categories";
 import useBalanceStore from "@/store/balance-store";
+import { useQueryClient } from "@tanstack/react-query";
 
 const AddTransactionModal = () => {
   const { balance } = useBalanceStore();
@@ -38,6 +39,8 @@ const AddTransactionModal = () => {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [error, setError] = useState<string>("");
   const [adding, setAdding] = useState<boolean>(false);
+
+  const queryClient = useQueryClient();
 
   const capitalizeWords = (str: string) => {
     return str
@@ -57,7 +60,7 @@ const AddTransactionModal = () => {
       amount: Number(amount),
       category: category,
       date: new Date(date),
-      description: description,
+      description: description ?? "",
       subcategory: subCategory,
       thirdCategory: thirdCategory ?? "",
       type: type,
@@ -80,6 +83,15 @@ const AddTransactionModal = () => {
         setDate(new Date().toISOString().split("T")[0]);
         toast.success("Successfully added transaction");
         setOpen(false);
+
+        queryClient.invalidateQueries({
+          queryKey: [
+            "balance",
+            "transactions",
+            "ten-transactions",
+            "transaction-days",
+          ],
+        });
       }
     } catch (error) {
       toast.error("Failed to add transaction");

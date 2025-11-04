@@ -45,7 +45,7 @@ const DashboardHeader = ({
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
+              <p className="text-sm font-semibold text-muted-foreground">
                 Total Balance
               </p>
               <p
@@ -68,7 +68,7 @@ const DashboardHeader = ({
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-sm font-semibold text-muted-foreground">
                   Total Income
                 </p>
                 <p className="text-3xl font-bold mt-2 text-green-600 dark:text-green-400">
@@ -85,7 +85,7 @@ const DashboardHeader = ({
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-sm font-semibold text-muted-foreground">
                   Total Expenses
                 </p>
                 <p className="text-3xl font-bold mt-2 text-red-600 dark:text-red-400">
@@ -101,7 +101,7 @@ const DashboardHeader = ({
       {/* Pie Chart */}
       <Card>
         <CardContent className="pt-6">
-          <p className="text-sm font-medium text-muted-foreground mb-4">
+          <p className="text-md font-bold text-muted-foreground mb-4">
             Income vs Expenses
           </p>
           <ResponsiveContainer width="100%" height={300}>

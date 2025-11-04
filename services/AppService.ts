@@ -16,6 +16,12 @@ interface GetTransactionsResponse extends APIResponse {
   };
 }
 
+interface GetTenTransactionsResponse extends APIResponse {
+  data: {
+    transactions: Transaction[];
+  };
+}
+
 interface GetBalanceResponse extends APIResponse {
   data: {
     balance: Balance;
@@ -89,15 +95,22 @@ class AppServiceClass {
     );
   };
 
-  getTransactions = async (
-    limit: number,
-    lastTransactionId: string | undefined
-  ) => {
+  getTransactions = async (lastTransactionId?: string) => {
     await this.initToken();
     return this.request<GetTransactionsResponse>(
-      `/api/transaction?limit=${limit}&lastTransactionId=${
+      `/api/transaction?lastTransactionId=${
         lastTransactionId ? lastTransactionId : ""
       }`,
+      null,
+      null,
+      "GET"
+    );
+  };
+
+  getTenTransactions = async () => {
+    await this.initToken();
+    return this.request<GetTenTransactionsResponse>(
+      `/api/ten-transactions`,
       null,
       null,
       "GET"

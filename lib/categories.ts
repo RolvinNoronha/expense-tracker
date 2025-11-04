@@ -32,7 +32,7 @@ const categories = {
     "hobbies",
     "games",
   ],
-  personalCare: [
+  personalcare: [
     "haircuts",
     "beauty-products",
     "skincare-products",
@@ -59,7 +59,7 @@ const categories = {
     "health-insurance",
     "car-insurance",
     "home-insurance",
-    "travel-nsurance",
+    "travel-insurance",
   ],
   gifts: ["gifts", "charitable-donations", "other-donations"],
   travel: ["flights", "transportation", "food", "entertainment", "shopping"],

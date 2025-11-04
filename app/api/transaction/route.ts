@@ -21,8 +21,8 @@ const transactionSchema = z
     subcategory: z.string({
       error: "Subcategory is required",
     }),
-    thirdCategory: z.string().min(2).optional(),
-    description: z.string().min(2).optional(),
+    thirdCategory: z.string().optional(),
+    description: z.string().optional(),
     amount: z
       .number({ error: "Amount is required" })
       .min(0, "Amount must be positive"),
@@ -243,16 +243,17 @@ export const POST = withAuth(addTransaction);
 // Get Transactions
 const getTransaction = async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams;
-  const limit = searchParams.get("limit")
-    ? Number(searchParams.get("limit"))
-    : 15;
   const lastTransaction = searchParams.get("lastTransactionId");
+  // const category = searchParams.get("category");
+  // const subcategory = searchParams.get("subcategory");
   const user = request.user;
+  const limit = 20;
 
   try {
     let transactionQuery = adminDb
       .collection("expenses")
       .where("userId", "==", user?.uid)
+      .orderBy("date", "desc")
       .limit(limit);
 
     if (lastTransaction) {
@@ -333,7 +334,11 @@ const getTransaction = async (request: NextRequest) => {
       JSON.stringify({
         success: false,
         message: "Failed to get transactions",
-        data: {},
+        data: {
+          transactions: [],
+          lastTransactionId: undefined,
+          hasMore: false,
+        },
         errors: { error },
       }),
       {
