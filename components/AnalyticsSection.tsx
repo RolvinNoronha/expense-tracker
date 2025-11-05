@@ -95,25 +95,24 @@ const AnalyticsSection = () => {
   };
 
   const generateTrendData = () => {
-    const data = [];
-    for (let i = range - 1; i >= 0; i--) {
+    const data = transactions.map((txn, idx) => {
       const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toLocaleDateString("en-US", {
+      date.setDate(date.getDate() - transactions.length - idx - 1);
+      const dateStr = date.toLocaleDateString("en-IN", {
         month: "short",
         day: "numeric",
       });
 
       // Simulate trend data
-      const income = Math.floor(Math.random() * 2000) + 500;
-      const expenses = Math.floor(Math.random() * 1500) + 300;
+      const income = txn.type == "income" ? txn.amount : 0;
+      const expenses = txn.type === "expense" ? txn.amount : 0;
 
-      data.push({
+      return {
         date: dateStr,
         income,
         expenses,
-      });
-    }
+      };
+    });
     return data;
   };
 

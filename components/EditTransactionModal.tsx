@@ -20,6 +20,10 @@ import {
 } from "@/components/ui/select";
 import { AddTransaction, Transaction } from "@/store/interfaces";
 import Categories from "@/lib/categories";
+import { AlertCircle, LoaderCircleIcon } from "lucide-react";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import AppService from "@/services/AppService";
 
 interface EditTransactionModalProps {
   transaction: Transaction;
@@ -50,6 +54,8 @@ const EditTransactionModal = ({
   transaction,
   onClose,
 }: EditTransactionModalProps) => {
+  const queryClient = useQueryClient();
+
   const [type, setType] = useState<"income" | "expense">(transaction.type);
   const [category, setCategory] = useState(transaction.category);
   const [subCategory, setSubCategory] = useState(transaction.subcategory);
@@ -58,6 +64,9 @@ const EditTransactionModal = ({
   );
   const [amount, setAmount] = useState(transaction.amount.toString());
   const [description, setDescription] = useState(transaction.description);
+
+  const [error, setError] = useState<string>("");
+  const [saving, setSaving] = useState<boolean>(false);
 
   console.log(transaction);
   const categories = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
@@ -74,12 +83,54 @@ const EditTransactionModal = ({
 
   const [date, setDate] = useState(formatDate(transaction.date));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!category || !amount) {
-      alert("Please fill in all required fields");
+    if (!category || !subCategory || !amount || !date) {
+      setError("Please fill all the required fields.");
       return;
+    }
+
+    const addtransaction: AddTransaction = {
+      amount: Number(amount),
+      category: category,
+      date: new Date(date),
+      description: description ?? "",
+      subcategory: subCategory,
+      thirdCategory: thirdCategory ?? "",
+      type: type,
+    };
+
+    setSaving(true);
+    try {
+      const result = await AppService.addTransaction(
+        addtransaction,
+        transaction.balanceId
+      );
+      if (result.success) {
+        setCategory("");
+        setSubCategory("");
+        setThirdCategory("");
+        setDescription("");
+        setAmount("");
+        setDate(new Date().toISOString().split("T")[0]);
+        toast.success("Successfully updated transaction");
+        onClose();
+
+        queryClient.invalidateQueries({
+          queryKey: [
+            "balance",
+            "transactions",
+            "ten-transactions",
+            "transaction-days",
+          ],
+        });
+      }
+    } catch (error) {
+      toast.error("Failed to update transaction");
+      console.error("Failed to update transaction: ", error);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -98,6 +149,12 @@ const EditTransactionModal = ({
           <DialogDescription>Update the transaction details</DialogDescription>
         </DialogHeader>
 
+        {error && (
+          <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Transaction Type */}
           <div className="space-y-2">
@@ -107,6 +164,7 @@ const EditTransactionModal = ({
               onValueChange={(value) => {
                 setType(value as "income" | "expense");
                 setCategory("");
+                setError("");
               }}
             >
               <SelectTrigger>
@@ -139,7 +197,13 @@ const EditTransactionModal = ({
           {/* Sub Category */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Sub Category</label>
-            <Select value={subCategory} onValueChange={setSubCategory}>
+            <Select
+              value={subCategory}
+              onValueChange={(value) => {
+                setSubCategory(value);
+                setError("");
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a sub category" />
               </SelectTrigger>
@@ -172,7 +236,10 @@ const EditTransactionModal = ({
               type="number"
               placeholder="0.00"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => {
+                setError("");
+                setAmount(e.target.value);
+              }}
               step="0.01"
               min="0"
               required
@@ -195,7 +262,10 @@ const EditTransactionModal = ({
             <Input
               type="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={(e) => {
+                setError("");
+                setDate(e.target.value);
+              }}
               required
             />
           </div>
@@ -214,7 +284,8 @@ const EditTransactionModal = ({
               type="submit"
               className="flex-1 bg-primary hover:bg-primary/90"
             >
-              Save Changes
+              {saving ? <LoaderCircleIcon className="animate-spin" /> : null}
+              {saving ? "Saving Transaction..." : "Save Transaction"}
             </Button>
           </div>
         </form>

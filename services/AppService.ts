@@ -95,6 +95,32 @@ class AppServiceClass {
     );
   };
 
+  updateTransaction = async (
+    txnId: string,
+    txn: AddTransaction,
+    balanceId: string | undefined
+  ) => {
+    await this.initToken();
+    return this.request<APIResponse>(
+      `/api/transaction?transactionId=${txnId}&balanceId=${
+        balanceId ? balanceId : ""
+      }`,
+      null,
+      JSON.stringify(txn),
+      "PATCH"
+    );
+  };
+
+  deleteTransaction = async (txnId: string) => {
+    await this.initToken();
+    return this.request<APIResponse>(
+      `/api/transaction?transactionId=${txnId}`,
+      null,
+      null,
+      "DELETE"
+    );
+  };
+
   getTransactions = async (lastTransactionId?: string) => {
     await this.initToken();
     return this.request<GetTransactionsResponse>(

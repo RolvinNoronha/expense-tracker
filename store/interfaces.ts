@@ -20,6 +20,7 @@ export interface APIResponse {
 export interface Transaction {
   transactionId: string;
   userId: string;
+  balanceId: string;
   amount: number;
   currency: string;
   date: {

@@ -115,6 +115,7 @@ function generateRandomObjects(num = 20) {
   return randomObjects;
 }
 
+// Add Transaction
 const addTransaction = async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams;
   const balanceId = searchParams.get("balanceId");
@@ -149,6 +150,7 @@ const addTransaction = async (request: NextRequest) => {
 
     adminDb.collection("expenses").add({
       userId: user?.uid,
+      balanceId: balanceId,
       amount: amount,
       currency: "INR",
       date: Timestamp.fromDate(date),
@@ -350,3 +352,199 @@ const getTransaction = async (request: NextRequest) => {
 };
 
 export const GET = withAuth(getTransaction);
+
+// Update Transaction
+const updateTransaction = async (request: NextRequest) => {
+  const searchParams = request.nextUrl.searchParams;
+  const transactionId = searchParams.get("transactionId");
+  const balanceId = searchParams.get("balanceId");
+
+  if (!transactionId || !balanceId) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: "Missing required fields",
+        data: {},
+        errors: {},
+      }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+
+  try {
+    const body = await request.json();
+
+    const result = await transactionSchema.parseAsync(body);
+    const {
+      amount,
+      category,
+      date,
+      type,
+      subcategory,
+      description,
+      thirdCategory,
+    } = result;
+
+    const txnRef = adminDb.collection("expenses").doc(transactionId);
+
+    const txnSnapshot = await txnRef.get();
+    const data = txnSnapshot.data();
+    if (!txnSnapshot.exists || !data) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Transaction not found",
+          data: {},
+          errors: {},
+        }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    txnRef.update({});
+
+    adminDb.collection("expenses").add({
+      amount: amount,
+      date: Timestamp.fromDate(date),
+      type: type,
+      category: category,
+      subcategory: subcategory,
+      thirdCategory: thirdCategory ?? "",
+      description: description ?? "",
+    });
+
+    let value = 0;
+    if (data.type === "income" && result.type === "expense") {
+      value = -result.amount - data.amount;
+    } else if (data.type == "expense" && result.type === "income") {
+      value = result.amount + data.amount;
+    } else if (data.type === "income" && result.type === "income") {
+      value = Math.abs(data.amount - result.amount);
+    } else if (data.type === "expense" && result.type === "expense") {
+      value = -Math.abs(data.amount - result.amount);
+    }
+
+    await adminDb
+      .collection("balance")
+      .doc(balanceId)
+      .update({
+        totalExpense: FieldValue.increment(value),
+      });
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Successfully updated transaction",
+        data: {},
+        errors: {},
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("Failed to update transaction: ", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: "Failed to update transaction",
+        data: {},
+        errors: { error },
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+};
+
+export const PATCH = withAuth(updateTransaction);
+
+const deleteTransaction = async (request: NextRequest) => {
+  const searchParams = request.nextUrl.searchParams;
+  const transactionId = searchParams.get("transactionId");
+
+  if (!transactionId) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: "Missing required fields",
+        data: {},
+        errors: {},
+      }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+
+  try {
+    const txnRef = adminDb.collection("expenses").doc(transactionId);
+
+    const txnSnapshot = await txnRef.get();
+    const data = txnSnapshot.data();
+    if (!txnSnapshot.exists || !data) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Transaction not found",
+          data: {},
+          errors: {},
+        }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    await adminDb
+      .collection("balance")
+      .doc(data.balanceId)
+      .update({
+        totalExpense: FieldValue.increment(
+          data.type === "income" ? -data.amount : data.amount
+        ),
+      });
+
+    await txnRef.delete();
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Successfully updated transaction",
+        data: {},
+        errors: {},
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("Failed to delete transaction: ", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: "Failed to delete transaction",
+        data: {},
+        errors: { error },
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+};
+
+export const DELETE = withAuth(deleteTransaction);

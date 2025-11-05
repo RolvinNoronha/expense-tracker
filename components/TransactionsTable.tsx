@@ -148,7 +148,9 @@ const Transactions = () => {
                     <SelectItem value="reset">Clear selection</SelectItem>
                   )}
                   {categories.map((cat) => (
-                    <SelectItem value={cat}>{capitalizeWords(cat)}</SelectItem>
+                    <SelectItem key={cat} value={cat}>
+                      {capitalizeWords(cat)}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -168,7 +170,7 @@ const Transactions = () => {
                   setSelectedSubcategory(value);
                 }}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger disabled={!selectedCategory} className="w-full">
                   <SelectValue placeholder="Select a subcategory" />
                 </SelectTrigger>
                 <SelectContent className="w-full">
@@ -318,8 +320,8 @@ const Transactions = () => {
 
       {deletingTransactionId && (
         <DeleteConfirmationModal
-          onConfirm={() => {}}
-          onCancel={() => setDeletingTransactionId(null)}
+          txnId={deletingTransactionId}
+          onClose={() => setDeletingTransactionId(null)}
         />
       )}
     </Card>

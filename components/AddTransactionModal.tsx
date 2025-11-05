@@ -56,6 +56,7 @@ const AddTransactionModal = () => {
       setError("Please fill all the required fields.");
       return;
     }
+
     const addtransaction: AddTransaction = {
       amount: Number(amount),
       category: category,
@@ -67,8 +68,6 @@ const AddTransactionModal = () => {
     };
 
     setAdding(true);
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    console.log(addtransaction);
     try {
       const result = await AppService.addTransaction(
         addtransaction,

@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import ThemeToggle from "@/components/ThemeToggle";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, LoaderCircleIcon } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 
 export default function LoginPage() {
@@ -97,6 +97,7 @@ export default function LoginPage() {
               className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
               disabled={isLoading}
             >
+              {isLoading ? <LoaderCircleIcon className="animate-spin" /> : null}
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
