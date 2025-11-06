@@ -1,11 +1,11 @@
 import AppService from "@/services/AppService";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
-export const useFetchTransactions = () =>
+export const useFetchTransactions = (category?: string, subcategory?: string) =>
   useInfiniteQuery({
-    queryKey: ["transactions"],
+    queryKey: ["transactions", category, subcategory],
     queryFn: ({ pageParam }: { pageParam?: string }) =>
-      AppService.getTransactions(pageParam),
+      AppService.getTransactions(pageParam, category, subcategory),
     initialPageParam: undefined,
     getNextPageParam: (lastPage) =>
       lastPage.data.hasMore ? lastPage.data.lastTransactionId : undefined,

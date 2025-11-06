@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AddTransaction, Transaction } from "@/store/interfaces";
-import Categories from "@/lib/categories";
+import categories from "@/lib/categories";
 import { AlertCircle, LoaderCircleIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -30,25 +30,6 @@ interface EditTransactionModalProps {
   onClose: () => void;
   onSave: (transaction: AddTransaction) => void;
 }
-
-const EXPENSE_CATEGORIES = [
-  "housing",
-  "transportataion",
-  "food",
-  "health",
-  "entertainment",
-  "personal-care",
-  "education",
-  "family",
-  "debt",
-  "insurance",
-  "travel",
-  "miscellaneous",
-  "business",
-  "taxes",
-];
-
-const INCOME_CATEGORIES = ["income", "gifts", "savings"];
 
 const EditTransactionModal = ({
   transaction,
@@ -68,9 +49,6 @@ const EditTransactionModal = ({
   const [error, setError] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
 
-  console.log(transaction);
-  const categories = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-
   const formatDate = (timestamp: {
     _seconds: number;
     _nanoseconds: number;
@@ -78,7 +56,7 @@ const EditTransactionModal = ({
     const totalMilliseconds =
       timestamp._seconds * 1000 + Math.floor(timestamp._nanoseconds / 1000000);
     const date = new Date(totalMilliseconds);
-    return date.toDateString();
+    return date.toISOString().split("T")[0];
   };
 
   const [date, setDate] = useState(formatDate(transaction.date));
@@ -103,7 +81,8 @@ const EditTransactionModal = ({
 
     setSaving(true);
     try {
-      const result = await AppService.addTransaction(
+      const result = await AppService.updateTransaction(
+        transaction.transactionId,
         addtransaction,
         transaction.balanceId
       );
@@ -115,9 +94,8 @@ const EditTransactionModal = ({
         setAmount("");
         setDate(new Date().toISOString().split("T")[0]);
         toast.success("Successfully updated transaction");
-        onClose();
 
-        queryClient.invalidateQueries({
+        await queryClient.invalidateQueries({
           queryKey: [
             "balance",
             "transactions",
@@ -125,6 +103,7 @@ const EditTransactionModal = ({
             "transaction-days",
           ],
         });
+        onClose();
       }
     } catch (error) {
       toast.error("Failed to update transaction");
@@ -141,6 +120,7 @@ const EditTransactionModal = ({
       .join(" "); // Join back with hyphens
   };
 
+  console.log(date);
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]" showCloseButton={false}>
@@ -164,6 +144,7 @@ const EditTransactionModal = ({
               onValueChange={(value) => {
                 setType(value as "income" | "expense");
                 setCategory("");
+                setSubCategory("");
                 setError("");
               }}
             >
@@ -185,7 +166,7 @@ const EditTransactionModal = ({
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((cat) => (
+                {Object.keys(categories).map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {capitalizeWords(cat)}
                   </SelectItem>
@@ -195,27 +176,31 @@ const EditTransactionModal = ({
           </div>
 
           {/* Sub Category */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Sub Category</label>
-            <Select
-              value={subCategory}
-              onValueChange={(value) => {
-                setSubCategory(value);
-                setError("");
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a sub category" />
-              </SelectTrigger>
-              <SelectContent>
-                {Categories[category as keyof typeof Categories].map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {capitalizeWords(cat)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {category.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Sub Category</label>
+              <Select
+                value={subCategory}
+                onValueChange={(value) => {
+                  setSubCategory(value);
+                  setError("");
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a sub category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories[category as keyof typeof categories].map(
+                    (subcat) => (
+                      <SelectItem key={subcat} value={subcat}>
+                        {capitalizeWords(subcat)}
+                      </SelectItem>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Additiona Details */}
           <div className="space-y-2">

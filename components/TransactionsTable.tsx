@@ -28,6 +28,7 @@ import { useFetchTransactions } from "@/hooks/hooks";
 import { useInView } from "react-intersection-observer";
 import EditTransactionModal from "@/components/EditTransactionModal";
 import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
+import categories from "@/lib/categories";
 
 const Transactions = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
@@ -41,7 +42,7 @@ const Transactions = () => {
   const { ref, inView } = useInView();
 
   const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useFetchTransactions();
+    useFetchTransactions(selectedCategory, selectedSubcategory);
 
   useEffect(() => {
     if (data) {
@@ -67,21 +68,21 @@ const Transactions = () => {
     }).format(value);
   };
 
-  const categories = useMemo(() => {
-    const cats = new Set(transactions.map((t) => t.category));
-    return Array.from(cats).sort();
-  }, [transactions]);
+  // const categories = useMemo(() => {
+  //   const cats = new Set(transactions.map((t) => t.category));
+  //   return Array.from(cats).sort();
+  // }, [transactions]);
 
-  const subcategories = useMemo(() => {
-    if (!selectedCategory) return [];
-    const subs = new Set(
-      transactions
-        .filter((t) => t.category === selectedCategory)
-        .map((t) => t.subcategory || "")
-        .filter(Boolean)
-    );
-    return Array.from(subs).sort();
-  }, [transactions, selectedCategory]);
+  // const subcategories = useMemo(() => {
+  //   if (!selectedCategory) return [];
+  //   const subs = new Set(
+  //     transactions
+  //       .filter((t) => t.category === selectedCategory)
+  //       .map((t) => t.subcategory || "")
+  //       .filter(Boolean)
+  //   );
+  //   return Array.from(subs).sort();
+  // }, [transactions, selectedCategory]);
 
   const formatDate = (timestamp: {
     _seconds: number;
@@ -147,7 +148,7 @@ const Transactions = () => {
                   {selectedCategory !== "" && (
                     <SelectItem value="reset">Clear selection</SelectItem>
                   )}
-                  {categories.map((cat) => (
+                  {Object.keys(categories).map((cat) => (
                     <SelectItem key={cat} value={cat}>
                       {capitalizeWords(cat)}
                     </SelectItem>
@@ -173,16 +174,20 @@ const Transactions = () => {
                 <SelectTrigger disabled={!selectedCategory} className="w-full">
                   <SelectValue placeholder="Select a subcategory" />
                 </SelectTrigger>
-                <SelectContent className="w-full">
-                  {selectedSubcategory !== "" && (
-                    <SelectItem value="reset">Clear selection</SelectItem>
-                  )}
-                  {subcategories.map((subcat) => (
-                    <SelectItem value={subcat}>
-                      {capitalizeWords(subcat)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                {selectedCategory ? (
+                  <SelectContent className="w-full">
+                    {selectedSubcategory !== "" && (
+                      <SelectItem value="reset">Clear selection</SelectItem>
+                    )}
+                    {categories[
+                      selectedCategory as keyof typeof categories
+                    ].map((subcat) => (
+                      <SelectItem key={subcat} value={subcat}>
+                        {capitalizeWords(subcat)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                ) : null}
               </Select>
             </div>
           </div>

@@ -31,11 +31,11 @@ const DeleteConfirmationModal = ({
   const handleDeleteTransaction = async () => {
     setDeleting(true);
     try {
+      // await new Promise((resolve) => setTimeout(resolve, 5000));
       const result = await AppService.deleteTransaction(txnId);
 
       if (result.success) {
-        toast.success("Successfully deleted transaction");
-        queryClient.invalidateQueries({
+        await queryClient.invalidateQueries({
           queryKey: [
             "balance",
             "transactions",
@@ -43,6 +43,7 @@ const DeleteConfirmationModal = ({
             "transaction-days",
           ],
         });
+        toast.success("Successfully deleted transaction");
       }
     } catch (error) {
       toast.error("Failed to delete transaction");
@@ -54,7 +55,7 @@ const DeleteConfirmationModal = ({
   };
 
   return (
-    <AlertDialog open={true} onOpenChange={onClose}>
+    <AlertDialog open={true} onOpenChange={() => {}}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Transaction</AlertDialogTitle>
@@ -73,7 +74,6 @@ const DeleteConfirmationModal = ({
               onClick={handleDeleteTransaction}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              Delete
               {deleting ? <LoaderCircleIcon className="animate-spin" /> : null}
               {deleting ? "Deleting..." : "Delete"}
             </Button>

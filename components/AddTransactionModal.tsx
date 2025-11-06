@@ -81,9 +81,8 @@ const AddTransactionModal = () => {
         setAmount("");
         setDate(new Date().toISOString().split("T")[0]);
         toast.success("Successfully added transaction");
-        setOpen(false);
 
-        queryClient.invalidateQueries({
+        await queryClient.invalidateQueries({
           queryKey: [
             "balance",
             "transactions",
@@ -91,6 +90,7 @@ const AddTransactionModal = () => {
             "transaction-days",
           ],
         });
+        setOpen(false);
       }
     } catch (error) {
       toast.error("Failed to add transaction");

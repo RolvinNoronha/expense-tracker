@@ -212,6 +212,7 @@ const addTransaction = async (request: NextRequest) => {
     );
   } catch (error) {
     if (error instanceof ZodError) {
+      console.error("Failed to add transaction: ", error);
       return new Response(
         JSON.stringify({
           success: false,
@@ -246,17 +247,41 @@ export const POST = withAuth(addTransaction);
 const getTransaction = async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams;
   const lastTransaction = searchParams.get("lastTransactionId");
-  // const category = searchParams.get("category");
-  // const subcategory = searchParams.get("subcategory");
+  const category = searchParams.get("category");
+  const subcategory = searchParams.get("subcategory");
   const user = request.user;
   const limit = 20;
 
   try {
-    let transactionQuery = adminDb
-      .collection("expenses")
-      .where("userId", "==", user?.uid)
-      .orderBy("date", "desc")
-      .limit(limit);
+    const getQuery = () => {
+      if (
+        category &&
+        category.length > 0 &&
+        subcategory &&
+        subcategory.length > 0
+      ) {
+        return adminDb
+          .collection("expenses")
+          .where("userId", "==", user?.uid)
+          .where("category", "==", category)
+          .where("subcategory", "==", subcategory)
+          .orderBy("date", "desc")
+          .limit(limit);
+      } else if (category && category.length > 0) {
+        return adminDb
+          .collection("expenses")
+          .where("userId", "==", user?.uid)
+          .where("category", "==", category)
+          .orderBy("date", "desc")
+          .limit(limit);
+      }
+      return adminDb
+        .collection("expenses")
+        .where("userId", "==", user?.uid)
+        .orderBy("date", "desc")
+        .limit(limit);
+    };
+    let transactionQuery = getQuery();
 
     if (lastTransaction) {
       const lastTransactionSnapshot = await adminDb
@@ -332,6 +357,7 @@ const getTransaction = async (request: NextRequest) => {
       }
     );
   } catch (error) {
+    console.error("Failed to get transactions: ", error);
     return new Response(
       JSON.stringify({
         success: false,
@@ -407,9 +433,7 @@ const updateTransaction = async (request: NextRequest) => {
       );
     }
 
-    txnRef.update({});
-
-    adminDb.collection("expenses").add({
+    txnRef.update({
       amount: amount,
       date: Timestamp.fromDate(date),
       type: type,
@@ -419,23 +443,40 @@ const updateTransaction = async (request: NextRequest) => {
       description: description ?? "",
     });
 
-    let value = 0;
     if (data.type === "income" && result.type === "expense") {
-      value = -result.amount - data.amount;
+      await adminDb
+        .collection("balance")
+        .doc(balanceId)
+        .update({
+          totalExpense: FieldValue.increment(result.amount),
+          totalIncome: FieldValue.increment(-data.amount),
+        });
     } else if (data.type == "expense" && result.type === "income") {
-      value = result.amount + data.amount;
+      await adminDb
+        .collection("balance")
+        .doc(balanceId)
+        .update({
+          totalExpense: FieldValue.increment(-data.amount),
+          totalIncome: FieldValue.increment(result.amount),
+        });
     } else if (data.type === "income" && result.type === "income") {
-      value = Math.abs(data.amount - result.amount);
-    } else if (data.type === "expense" && result.type === "expense") {
-      value = -Math.abs(data.amount - result.amount);
-    }
+      const value = result.amount - data.amount;
 
-    await adminDb
-      .collection("balance")
-      .doc(balanceId)
-      .update({
-        totalExpense: FieldValue.increment(value),
-      });
+      await adminDb
+        .collection("balance")
+        .doc(balanceId)
+        .update({
+          totalIncome: FieldValue.increment(value),
+        });
+    } else if (data.type === "expense" && result.type === "expense") {
+      const value = result.amount - data.amount;
+      await adminDb
+        .collection("balance")
+        .doc(balanceId)
+        .update({
+          totalExpense: FieldValue.increment(value),
+        });
+    }
 
     return new Response(
       JSON.stringify({
@@ -507,14 +548,21 @@ const deleteTransaction = async (request: NextRequest) => {
       );
     }
 
-    await adminDb
-      .collection("balance")
-      .doc(data.balanceId)
-      .update({
-        totalExpense: FieldValue.increment(
-          data.type === "income" ? -data.amount : data.amount
-        ),
-      });
+    if (data.type === "income") {
+      await adminDb
+        .collection("balance")
+        .doc(data.balanceId)
+        .update({
+          totalIncome: FieldValue.increment(-data.amount),
+        });
+    } else if (data.type === "expense") {
+      await adminDb
+        .collection("balance")
+        .doc(data.balanceId)
+        .update({
+          totalExpense: FieldValue.increment(-data.amount),
+        });
+    }
 
     await txnRef.delete();
 

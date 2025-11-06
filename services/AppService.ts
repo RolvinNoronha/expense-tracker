@@ -121,11 +121,17 @@ class AppServiceClass {
     );
   };
 
-  getTransactions = async (lastTransactionId?: string) => {
+  getTransactions = async (
+    lastTransactionId?: string,
+    category?: string,
+    subcategory?: string
+  ) => {
     await this.initToken();
     return this.request<GetTransactionsResponse>(
       `/api/transaction?lastTransactionId=${
         lastTransactionId ? lastTransactionId : ""
+      }&category=${category ? category : ""}&subcategory=${
+        subcategory ? subcategory : ""
       }`,
       null,
       null,
