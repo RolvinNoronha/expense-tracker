@@ -131,7 +131,6 @@ const Transactions = () => {
               <Select
                 value={selectedCategory}
                 onValueChange={(value) => {
-                  console.log(value, selectedCategory);
                   if (value === "reset") {
                     setSelectedCategory("");
                     setSelectedSubcategory("");

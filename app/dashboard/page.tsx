@@ -38,13 +38,6 @@ export default function DashboardPage() {
       return;
     }
 
-    const printToken = async () => {
-      const token = await auth.currentUser?.getIdToken();
-      console.log(token);
-    };
-
-    printToken();
-
     if (data) {
       const income = data?.data.balance.totalIncome;
       const expense = data.data.balance.totalExpense;

@@ -62,8 +62,6 @@ class AppServiceClass {
       reqOptions.data = data;
     }
 
-    console.log(reqOptions);
-
     try {
       const response = await axios.request(reqOptions);
       return response.data;

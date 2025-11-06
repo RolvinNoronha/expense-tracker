@@ -120,7 +120,6 @@ const EditTransactionModal = ({
       .join(" "); // Join back with hyphens
   };
 
-  console.log(date);
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]" showCloseButton={false}>
