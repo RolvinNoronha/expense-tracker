@@ -2,16 +2,17 @@
 
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const DashboardNav = () => {
   const { logout } = useAuth();
   const router = useRouter();
+  const pathName = usePathname();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.push("/login");
   };
 
@@ -23,13 +24,19 @@ const DashboardNav = () => {
           <nav className="hidden md:flex items-center gap-4">
             <a
               href="/dashboard"
-              className="text-sm font-medium hover:text-primary transition-colors"
+              className={`text-sm font-medium hover:text-primary transition-colors ${
+                pathName === "/dashboard" ? "underline underline-offset-2" : ""
+              }`}
             >
               Dashboard
             </a>
             <a
               href="/transactions"
-              className="text-sm font-medium hover:text-primary transition-colors"
+              className={`text-sm font-medium hover:text-primary transition-colors ${
+                pathName === "/transactions"
+                  ? "underline underline-offset-2"
+                  : ""
+              }`}
             >
               Transactions
             </a>

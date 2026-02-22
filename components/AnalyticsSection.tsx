@@ -45,29 +45,50 @@ const AnalyticsSection = () => {
 
   // Generate time-based bar chart data
   const generateTimeBasedData = () => {
-    const days = range;
-    const data = [];
+    const dataMap: Record<
+      string,
+      { income: number; expenses: number; timestamp: number }
+    > = {};
 
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
+    transactions.forEach((transaction) => {
+      const dateInMillis =
+        transaction.date._seconds * 1000 +
+        transaction.date._nanoseconds / 1000000;
+      const date = new Date(dateInMillis);
       const dateStr = date.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
       });
 
-      // Simulate data
-      const income = Math.floor(Math.random() * 2000) + 300;
-      const expenses = Math.floor(Math.random() * 1500) + 200;
+      const startOfDay = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+      ).getTime();
 
-      data.push({
-        date: dateStr,
-        income,
-        expenses,
-      });
-    }
+      if (!dataMap[dateStr]) {
+        dataMap[dateStr] = {
+          income: 0,
+          expenses: 0,
+          timestamp: startOfDay,
+        };
+      }
 
-    return data;
+      if (transaction.type === "income") {
+        dataMap[dateStr].income += transaction.amount;
+      } else {
+        dataMap[dateStr].expenses += transaction.amount;
+      }
+    });
+
+    return Object.entries(dataMap)
+      .map(([date, totals]) => ({
+        date,
+        income: totals.income,
+        expenses: totals.expenses,
+        timestamp: totals.timestamp,
+      }))
+      .sort((a, b) => a.timestamp - b.timestamp);
   };
 
   // Generate category-based data
@@ -95,25 +116,7 @@ const AnalyticsSection = () => {
   };
 
   const generateTrendData = () => {
-    const data = transactions.map((txn, idx) => {
-      const date = new Date();
-      date.setDate(date.getDate() - transactions.length - idx - 1);
-      const dateStr = date.toLocaleDateString("en-IN", {
-        month: "short",
-        day: "numeric",
-      });
-
-      // Simulate trend data
-      const income = txn.type == "income" ? txn.amount : 0;
-      const expenses = txn.type === "expense" ? txn.amount : 0;
-
-      return {
-        date: dateStr,
-        income,
-        expenses,
-      };
-    });
-    return data;
+    return generateTimeBasedData();
   };
 
   const timeBasedData = generateTimeBasedData();
@@ -139,9 +142,9 @@ const AnalyticsSection = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>30-Day Trend</CardTitle>
+              <CardTitle>Trend</CardTitle>
               <CardDescription>
-                Income and expenses over the last 30 days
+                Income and expenses over the last {range} days
               </CardDescription>
             </div>
             <Select

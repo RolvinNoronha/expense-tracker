@@ -66,10 +66,13 @@ const DeleteConfirmationModal = ({
         </AlertDialogHeader>
         <div className="flex gap-3 justify-end pt-4">
           <AlertDialogCancel asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button disabled={deleting} variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
           </AlertDialogCancel>
           <AlertDialogAction asChild>
             <Button
+              disabled={deleting}
               variant="destructive"
               onClick={handleDeleteTransaction}
               className="bg-red-600 hover:bg-red-700 text-white"

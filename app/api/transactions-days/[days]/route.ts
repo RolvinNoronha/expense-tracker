@@ -5,18 +5,30 @@ import { NextRequest } from "next/server";
 
 const getTransactionDays = async (
   request: NextRequest,
-  { params }: { params: Promise<{ days: string }> }
+  { params }: { params: Promise<{ days: string }> },
 ) => {
   const user = request.user;
   const days = (await params).days;
 
   const now = new Date();
-  const daysAgo = Number(days);
-  const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const daysAgoCount = Number(days);
+  const startDate = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    23,
+    59,
+    59,
+    999
+  );
   const endDate = new Date(
     now.getFullYear(),
     now.getMonth(),
-    now.getDate() - daysAgo
+    now.getDate() - daysAgoCount,
+    0,
+    0,
+    0,
+    0
   );
 
   try {
@@ -25,6 +37,7 @@ const getTransactionDays = async (
       .where("userId", "==", user?.uid)
       .where("date", ">=", Timestamp.fromDate(endDate))
       .where("date", "<=", Timestamp.fromDate(startDate))
+      .orderBy("date", "desc")
       .get();
 
     const transactions = transactionsSnapshot.docs.map((doc) => {
@@ -44,7 +57,7 @@ const getTransactionDays = async (
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (error) {
     return new Response(
@@ -57,7 +70,7 @@ const getTransactionDays = async (
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };

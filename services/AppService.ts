@@ -44,7 +44,7 @@ class AppServiceClass {
     url: string,
     headers: Record<string, string> | null,
     data: string | null,
-    method: RequestMethod
+    method: RequestMethod,
   ): Promise<T> {
     const baseHeaders: Record<string, string> = {
       "Content-Type": "application/json",
@@ -89,14 +89,14 @@ class AppServiceClass {
       `/api/transaction?balanceId=${balanceId ? balanceId : ""}`,
       null,
       JSON.stringify(t),
-      "POST"
+      "POST",
     );
   };
 
   updateTransaction = async (
     txnId: string,
     txn: AddTransaction,
-    balanceId: string | undefined
+    balanceId: string | undefined,
   ) => {
     await this.initToken();
     return this.request<APIResponse>(
@@ -105,7 +105,7 @@ class AppServiceClass {
       }`,
       null,
       JSON.stringify(txn),
-      "PATCH"
+      "PATCH",
     );
   };
 
@@ -115,14 +115,14 @@ class AppServiceClass {
       `/api/transaction?transactionId=${txnId}`,
       null,
       null,
-      "DELETE"
+      "DELETE",
     );
   };
 
   getTransactions = async (
     lastTransactionId?: string,
     category?: string,
-    subcategory?: string
+    subcategory?: string,
   ) => {
     await this.initToken();
     return this.request<GetTransactionsResponse>(
@@ -133,7 +133,7 @@ class AppServiceClass {
       }`,
       null,
       null,
-      "GET"
+      "GET",
     );
   };
 
@@ -143,17 +143,17 @@ class AppServiceClass {
       `/api/ten-transactions`,
       null,
       null,
-      "GET"
+      "GET",
     );
   };
 
   getTransactionsDays = async (days: number) => {
     await this.initToken();
     return this.request<GetTransactionsResponse>(
-      `/api/get-transactions-days/${days}`,
+      `/api/transactions-days/${days}`,
       null,
       null,
-      "GET"
+      "GET",
     );
   };
 }

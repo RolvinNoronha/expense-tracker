@@ -57,10 +57,28 @@ const AddTransactionModal = () => {
       return;
     }
 
+    console.log(date);
+    const [year, month, day] = date.split("-").map(Number);
+
+    console.log(date, month, year);
+
+    const now = new Date();
+    const correctDate = new Date(
+      year,
+      month - 1, // months are 0-based
+      day,
+      now.getHours(),
+      now.getMinutes(),
+      now.getSeconds(),
+      now.getMilliseconds(),
+    );
+
+    console.log(correctDate);
+
     const addtransaction: AddTransaction = {
       amount: Number(amount),
       category: category,
-      date: new Date(date),
+      date: correctDate,
       description: description ?? "",
       subcategory: subCategory,
       thirdCategory: thirdCategory ?? "",
@@ -71,7 +89,7 @@ const AddTransactionModal = () => {
     try {
       const result = await AppService.addTransaction(
         addtransaction,
-        balance?.balanceId
+        balance?.balanceId,
       );
       if (result.success) {
         setCategory("");
@@ -110,7 +128,11 @@ const AddTransactionModal = () => {
           <Plus className="h-6 w-6" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]" showCloseButton={false}>
+      <DialogContent
+        className="sm:max-w-[500px]"
+        showCloseButton={false}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Add New Transaction</DialogTitle>
           <DialogDescription>
@@ -189,7 +211,7 @@ const AddTransactionModal = () => {
                       <SelectItem key={subCat} value={subCat}>
                         {capitalizeWords(subCat)}
                       </SelectItem>
-                    )
+                    ),
                   )}
                 </SelectContent>
               </Select>

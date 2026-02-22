@@ -5,7 +5,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 import Providers from "@/providers/Providers";
-import Head from "next/head";
 
 export const metadata: Metadata = {
   title: "Expense Tracker",
@@ -24,14 +23,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <Head>
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="32x32"
-          href="favicon-32x32.png"
-        />
-      </Head>
       <body
         className={cn(
           `${openSans.className} min-h-screen bg-background antialiased`
