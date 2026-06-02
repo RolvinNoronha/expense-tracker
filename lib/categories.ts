@@ -17,7 +17,7 @@ const categories = {
     "parking-fees",
     "tolls",
   ],
-  food: ["groceries", "dining-out", "takeout", "snacks"],
+  food: ["groceries", "takeout", "snacks", "lunch", "break-fast", "dinner"],
   health: [
     "health-insurance",
     "medications",

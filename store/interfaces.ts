@@ -56,3 +56,26 @@ export interface Balance {
   userId: string;
   balanceId: string;
 }
+
+export interface OwedEntry {
+  owedId: string;
+  userId: string;
+  personName: string;
+  amount: number;
+  description: string;
+  status: "pending" | "paid";
+  createdAt: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
+  updatedAt: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
+}
+
+export interface AddOwedEntry {
+  personName: string;
+  amount: number;
+  description: string;
+}

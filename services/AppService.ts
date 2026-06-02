@@ -1,8 +1,10 @@
 import axios, { type AxiosRequestConfig } from "axios";
 import type {
+  AddOwedEntry,
   AddTransaction,
   APIResponse,
   Balance,
+  OwedEntry,
   RequestMethod,
   Transaction,
 } from "@/store/interfaces";
@@ -25,6 +27,12 @@ interface GetTenTransactionsResponse extends APIResponse {
 interface GetBalanceResponse extends APIResponse {
   data: {
     balance: Balance;
+  };
+}
+
+interface GetOwedEntriesResponse extends APIResponse {
+  data: {
+    entries: OwedEntry[];
   };
 }
 
@@ -154,6 +162,46 @@ class AppServiceClass {
       null,
       null,
       "GET",
+    );
+  };
+
+  getOwedEntries = async () => {
+    await this.initToken();
+    return this.request<GetOwedEntriesResponse>(
+      `/api/owed-to-me`,
+      null,
+      null,
+      "GET",
+    );
+  };
+
+  addOwedEntry = async (entry: AddOwedEntry) => {
+    await this.initToken();
+    return this.request<APIResponse>(
+      `/api/owed-to-me`,
+      null,
+      JSON.stringify(entry),
+      "POST",
+    );
+  };
+
+  markOwedEntryPaid = async (owedId: string) => {
+    await this.initToken();
+    return this.request<APIResponse>(
+      `/api/owed-to-me?owedId=${owedId}`,
+      null,
+      null,
+      "PATCH",
+    );
+  };
+
+  deleteOwedEntry = async (owedId: string) => {
+    await this.initToken();
+    return this.request<APIResponse>(
+      `/api/owed-to-me?owedId=${owedId}`,
+      null,
+      null,
+      "DELETE",
     );
   };
 }

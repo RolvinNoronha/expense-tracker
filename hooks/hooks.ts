@@ -28,3 +28,9 @@ export const useFetchBalance = () =>
     queryKey: ["balance"],
     queryFn: () => AppService.getBalance(),
   });
+
+export const useFetchOwedEntries = () =>
+  useQuery({
+    queryKey: ["owed-entries"],
+    queryFn: () => AppService.getOwedEntries(),
+  });
