@@ -296,7 +296,7 @@ const OwedToMeSection = () => {
           </Button>
         </DialogTrigger>
         <DialogContent
-          className="sm:max-w-[450px]"
+          className="sm:max-w-112.5"
           showCloseButton={false}
           onInteractOutside={(e) => e.preventDefault()}
         >

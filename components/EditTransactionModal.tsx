@@ -41,7 +41,7 @@ const EditTransactionModal = ({
   const [category, setCategory] = useState(transaction.category);
   const [subCategory, setSubCategory] = useState(transaction.subcategory);
   const [thirdCategory, setThirdCategory] = useState(
-    transaction.thirdCategory ?? ""
+    transaction.thirdCategory ?? "",
   );
   const [amount, setAmount] = useState(transaction.amount.toString());
   const [description, setDescription] = useState(transaction.description);
@@ -69,10 +69,23 @@ const EditTransactionModal = ({
       return;
     }
 
+    const [year, month, day] = date.split("-").map(Number);
+
+    const now = new Date();
+    const correctDate = new Date(
+      year,
+      month - 1, // months are 0-based
+      day,
+      now.getHours(),
+      now.getMinutes(),
+      now.getSeconds(),
+      now.getMilliseconds(),
+    );
+
     const addtransaction: AddTransaction = {
       amount: Number(amount),
       category: category,
-      date: new Date(date),
+      date: correctDate,
       description: description ?? "",
       subcategory: subCategory,
       thirdCategory: thirdCategory ?? "",
@@ -84,7 +97,7 @@ const EditTransactionModal = ({
       const result = await AppService.updateTransaction(
         transaction.transactionId,
         addtransaction,
-        transaction.balanceId
+        transaction.balanceId,
       );
       if (result.success) {
         setCategory("");
@@ -95,14 +108,12 @@ const EditTransactionModal = ({
         setDate(new Date().toISOString().split("T")[0]);
         toast.success("Successfully updated transaction");
 
-        await queryClient.invalidateQueries({
-          queryKey: [
-            "balance",
-            "transactions",
-            "ten-transactions",
-            "transaction-days",
-          ],
-        });
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["balance"] }),
+          queryClient.invalidateQueries({ queryKey: ["transactions"] }),
+          queryClient.invalidateQueries({ queryKey: ["ten-transactions"] }),
+          queryClient.invalidateQueries({ queryKey: ["transaction-days"] }),
+        ]);
         onClose();
       }
     } catch (error) {
@@ -122,7 +133,7 @@ const EditTransactionModal = ({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]" showCloseButton={false}>
+      <DialogContent className="sm:max-w-125" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Edit Transaction</DialogTitle>
           <DialogDescription>Update the transaction details</DialogDescription>
@@ -194,7 +205,7 @@ const EditTransactionModal = ({
                       <SelectItem key={subcat} value={subcat}>
                         {capitalizeWords(subcat)}
                       </SelectItem>
-                    )
+                    ),
                   )}
                 </SelectContent>
               </Select>
@@ -257,6 +268,7 @@ const EditTransactionModal = ({
           {/* Buttons */}
           <div className="flex gap-3 pt-4">
             <Button
+              disabled={saving}
               type="button"
               variant="outline"
               onClick={onClose}
@@ -267,6 +279,7 @@ const EditTransactionModal = ({
             <Button
               type="submit"
               className="flex-1 bg-primary hover:bg-primary/90"
+              disabled={saving}
             >
               {saving ? <LoaderCircleIcon className="animate-spin" /> : null}
               {saving ? "Saving Transaction..." : "Save Transaction"}

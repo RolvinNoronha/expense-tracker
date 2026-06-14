@@ -35,14 +35,12 @@ const DeleteConfirmationModal = ({
       const result = await AppService.deleteTransaction(txnId);
 
       if (result.success) {
-        await queryClient.invalidateQueries({
-          queryKey: [
-            "balance",
-            "transactions",
-            "ten-transactions",
-            "transaction-days",
-          ],
-        });
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["balance"] }),
+          queryClient.invalidateQueries({ queryKey: ["transactions"] }),
+          queryClient.invalidateQueries({ queryKey: ["ten-transactions"] }),
+          queryClient.invalidateQueries({ queryKey: ["transaction-days"] }),
+        ]);
         toast.success("Successfully deleted transaction");
       }
     } catch (error) {

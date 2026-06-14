@@ -8,15 +8,8 @@ const categories = {
     "repairs",
     "property-tax",
   ],
-  transportation: [
-    "fuel",
-    "public-transit",
-    "car-payments",
-    "car-insurance",
-    "maintenance",
-    "parking-fees",
-    "tolls",
-  ],
+  vehicle: ["fuel", "maintenance", "parking-fees", "tolls"],
+  transportation: ["public-transit", "journey"],
   food: ["groceries", "takeout", "snacks", "lunch", "break-fast", "dinner"],
   health: [
     "health-insurance",
@@ -57,7 +50,7 @@ const categories = {
   insurance: [
     "life-insurance",
     "health-insurance",
-    "car-insurance",
+    "vehicle-insurance",
     "home-insurance",
     "travel-insurance",
   ],

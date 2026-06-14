@@ -57,10 +57,7 @@ const AddTransactionModal = () => {
       return;
     }
 
-    console.log(date);
     const [year, month, day] = date.split("-").map(Number);
-
-    console.log(date, month, year);
 
     const now = new Date();
     const correctDate = new Date(
@@ -100,14 +97,13 @@ const AddTransactionModal = () => {
         setDate(new Date().toISOString().split("T")[0]);
         toast.success("Successfully added transaction");
 
-        await queryClient.invalidateQueries({
-          queryKey: [
-            "balance",
-            "transactions",
-            "ten-transactions",
-            "transaction-days",
-          ],
-        });
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["balance"] }),
+          queryClient.invalidateQueries({ queryKey: ["transactions"] }),
+          queryClient.invalidateQueries({ queryKey: ["ten-transactions"] }),
+          queryClient.invalidateQueries({ queryKey: ["transaction-days"] }),
+        ]);
+
         setOpen(false);
       }
     } catch (error) {
@@ -129,7 +125,7 @@ const AddTransactionModal = () => {
         </Button>
       </DialogTrigger>
       <DialogContent
-        className="sm:max-w-[500px]"
+        className="sm:max-w-125"
         showCloseButton={false}
         onInteractOutside={(e) => e.preventDefault()}
       >

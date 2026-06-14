@@ -2,7 +2,7 @@ import { adminDb } from "@/lib/firebaseAdmin";
 import { withAuth } from "@/lib/with-auth";
 import { Timestamp } from "firebase-admin/firestore";
 import { NextRequest } from "next/server";
-import { z, ZodError } from "zod";
+import * as z from "zod";
 
 const owedEntrySchema = z.object({
   personName: z
@@ -40,7 +40,7 @@ const getOwedEntries = async (request: NextRequest) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (error) {
     console.error("Failed to get owed entries: ", error);
@@ -54,7 +54,7 @@ const getOwedEntries = async (request: NextRequest) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };
@@ -89,10 +89,10 @@ const addOwedEntry = async (request: NextRequest) => {
       {
         status: 201,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (error) {
-    if (error instanceof ZodError) {
+    if (error instanceof z.ZodError) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -103,7 +103,7 @@ const addOwedEntry = async (request: NextRequest) => {
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
     }
     console.error("Failed to add owed entry: ", error);
@@ -117,7 +117,7 @@ const addOwedEntry = async (request: NextRequest) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };
@@ -140,7 +140,7 @@ const updateOwedEntry = async (request: NextRequest) => {
       {
         status: 400,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 
@@ -159,7 +159,7 @@ const updateOwedEntry = async (request: NextRequest) => {
         {
           status: 404,
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
     }
 
@@ -178,7 +178,7 @@ const updateOwedEntry = async (request: NextRequest) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (error) {
     console.error("Failed to update owed entry: ", error);
@@ -192,7 +192,7 @@ const updateOwedEntry = async (request: NextRequest) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };
@@ -215,7 +215,7 @@ const deleteOwedEntry = async (request: NextRequest) => {
       {
         status: 400,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 
@@ -234,7 +234,7 @@ const deleteOwedEntry = async (request: NextRequest) => {
         {
           status: 404,
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
     }
 
@@ -250,7 +250,7 @@ const deleteOwedEntry = async (request: NextRequest) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (error) {
     console.error("Failed to delete owed entry: ", error);
@@ -264,7 +264,7 @@ const deleteOwedEntry = async (request: NextRequest) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };

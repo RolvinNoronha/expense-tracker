@@ -16,6 +16,8 @@ import {
 import ThemeToggle from "@/components/ThemeToggle";
 import { AlertCircle, LoaderCircleIcon } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
+import { toast } from "sonner";
+import { FirebaseError } from "firebase/app";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -31,8 +33,19 @@ export default function LoginPage() {
     setIsLoading(true);
 
     if (email && password) {
-      await login(email, password);
-      router.push("/dashboard");
+      try {
+        await login(email, password);
+        router.push("/dashboard");
+      } catch (error) {
+        console.error("Failed to signin: ", error);
+        if (error instanceof FirebaseError && error.code.startsWith("auth/")) {
+          toast.error(error.code);
+        } else {
+          toast.error("Failed to SignIn");
+        }
+      } finally {
+        setIsLoading(false);
+      }
     } else {
       setError("Please enter both email and password");
       setIsLoading(false);

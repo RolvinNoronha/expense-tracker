@@ -24,7 +24,7 @@ export function withAuth(handler: Handler): Handler {
         {
           status: 401,
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
     }
 
@@ -49,7 +49,7 @@ export function withAuth(handler: Handler): Handler {
         {
           status: 403,
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
     }
   };

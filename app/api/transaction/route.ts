@@ -3,14 +3,14 @@ import { adminDb } from "@/lib/firebaseAdmin";
 import { withAuth } from "@/lib/with-auth";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { NextRequest } from "next/server";
-import { z, ZodError } from "zod";
+import * as z from "zod";
 
 type Categories = typeof categories;
 
 // Extract category keys and type them as a non-empty array for z.enum
 const categoryKeys = Object.keys(categories) as [
   keyof Categories,
-  ...(keyof Categories)[]
+  ...(keyof Categories)[],
 ];
 
 // Define the schema for the body using .superRefine for dependent validation
@@ -40,7 +40,7 @@ const transactionSchema = z
         code: "custom",
         path: ["subcategory"], // The field this error applies to
         message: `Invalid subcategory for '${category}'. Expected one of: ${validSubcategories.join(
-          ", "
+          ", ",
         )}`,
         received: data.subcategory,
         options: validSubcategories, // This provides the list of valid options
@@ -77,7 +77,7 @@ function generateRandomObjects(num = 20) {
     const categoryKey = getRandomItem(Object.keys(categories));
     const category = categoryKey;
     const subcategory = getRandomItem(
-      categories[category as keyof typeof categories]
+      categories[category as keyof typeof categories],
     );
 
     // Randomly choose thirdCategory (could be an additional subcategory or related item)
@@ -86,7 +86,7 @@ function generateRandomObjects(num = 20) {
       thirdCategory = "investments"; // Just an example, adjust for specific use case
     } else {
       thirdCategory = getRandomItem(
-        categories[categoryKey as keyof typeof categories]
+        categories[categoryKey as keyof typeof categories],
       );
     }
 
@@ -130,7 +130,7 @@ const addTransaction = async (request: NextRequest) => {
       {
         status: 400,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
   const user = request.user;
@@ -208,10 +208,10 @@ const addTransaction = async (request: NextRequest) => {
       {
         status: 201,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (error) {
-    if (error instanceof ZodError) {
+    if (error instanceof z.ZodError) {
       console.error("Failed to add transaction: ", error);
       return new Response(
         JSON.stringify({
@@ -223,7 +223,7 @@ const addTransaction = async (request: NextRequest) => {
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
     }
     return new Response(
@@ -236,7 +236,7 @@ const addTransaction = async (request: NextRequest) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };
@@ -304,7 +304,7 @@ const getTransaction = async (request: NextRequest) => {
           {
             status: 200,
             headers: { "Content-Type": "application/json" },
-          }
+          },
         );
       }
 
@@ -327,7 +327,7 @@ const getTransaction = async (request: NextRequest) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
     }
 
@@ -354,7 +354,7 @@ const getTransaction = async (request: NextRequest) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (error) {
     console.error("Failed to get transactions: ", error);
@@ -372,7 +372,7 @@ const getTransaction = async (request: NextRequest) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };
@@ -396,7 +396,7 @@ const updateTransaction = async (request: NextRequest) => {
       {
         status: 400,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 
@@ -429,7 +429,7 @@ const updateTransaction = async (request: NextRequest) => {
         {
           status: 404,
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
     }
 
@@ -488,7 +488,7 @@ const updateTransaction = async (request: NextRequest) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (error) {
     console.error("Failed to update transaction: ", error);
@@ -502,7 +502,7 @@ const updateTransaction = async (request: NextRequest) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };
@@ -524,7 +524,7 @@ const deleteTransaction = async (request: NextRequest) => {
       {
         status: 400,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 
@@ -544,7 +544,7 @@ const deleteTransaction = async (request: NextRequest) => {
         {
           status: 404,
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
     }
 
@@ -576,7 +576,7 @@ const deleteTransaction = async (request: NextRequest) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (error) {
     console.error("Failed to delete transaction: ", error);
@@ -590,7 +590,7 @@ const deleteTransaction = async (request: NextRequest) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 };

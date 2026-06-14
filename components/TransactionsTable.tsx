@@ -68,22 +68,6 @@ const Transactions = () => {
     }).format(value);
   };
 
-  // const categories = useMemo(() => {
-  //   const cats = new Set(transactions.map((t) => t.category));
-  //   return Array.from(cats).sort();
-  // }, [transactions]);
-
-  // const subcategories = useMemo(() => {
-  //   if (!selectedCategory) return [];
-  //   const subs = new Set(
-  //     transactions
-  //       .filter((t) => t.category === selectedCategory)
-  //       .map((t) => t.subcategory || "")
-  //       .filter(Boolean)
-  //   );
-  //   return Array.from(subs).sort();
-  // }, [transactions, selectedCategory]);
-
   const formatDate = (timestamp: {
     _seconds: number;
     _nanoseconds: number;
@@ -287,7 +271,7 @@ const Transactions = () => {
                               size="sm"
                               onClick={() =>
                                 setDeletingTransactionId(
-                                  transaction.transactionId
+                                  transaction.transactionId,
                                 )
                               }
                               title="Delete transaction"

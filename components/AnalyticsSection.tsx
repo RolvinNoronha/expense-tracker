@@ -63,7 +63,7 @@ const AnalyticsSection = () => {
       const startOfDay = new Date(
         date.getFullYear(),
         date.getMonth(),
-        date.getDate()
+        date.getDate(),
       ).getTime();
 
       if (!dataMap[dateStr]) {
@@ -137,7 +137,6 @@ const AnalyticsSection = () => {
   return (
     <div className="space-y-6">
       {/* Trend Chart */}
-
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
