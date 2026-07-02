@@ -9,7 +9,7 @@ const categories = {
     "property-tax",
   ],
   vehicle: ["fuel", "maintenance", "parking-fees", "tolls"],
-  transportation: ["public-transit", "journey"],
+  transportation: ["metro", "bus", "cab", "auto", "bike"],
   food: ["groceries", "takeout", "snacks", "lunch", "break-fast", "dinner"],
   health: [
     "health-insurance",
