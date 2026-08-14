@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   PieChart,
   Pie,
-  Cell,
+  Sector,
   ResponsiveContainer,
   Legend,
   Tooltip,
@@ -27,11 +27,9 @@ const DashboardHeader = ({
   const monthLabel = formatMonthLabel(month);
 
   const chartData = [
-    { name: "Income", value: income },
-    { name: "Expenses", value: expenses },
+    { name: "Income", value: income, fill: "#10b981" },
+    { name: "Expenses", value: expenses, fill: "#ef4444" },
   ].filter((item) => item.value > 0);
-
-  const COLORS = ["#10b981", "#ef4444"];
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -46,7 +44,7 @@ const DashboardHeader = ({
     <div className="space-y-4">
       {/* Monthly Summary Header */}
       <div>
-        <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
           <Scale className="h-5 w-5 text-primary" />
           Monthly Overview ({monthLabel})
         </h2>
@@ -56,21 +54,21 @@ const DashboardHeader = ({
       </div>
 
       {/* Income, Expenses, and Net Savings Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {/* Income Card */}
         <Card className="border-green-500/20 bg-green-500/5 shadow-xs">
-          <CardContent className="p-4">
+          <CardContent className="p-3.5 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Monthly Income
                 </p>
-                <p className="text-2xl font-bold mt-1 text-green-600 dark:text-green-400">
+                <p className="text-xl sm:text-2xl font-bold mt-1 text-green-600 dark:text-green-400">
                   {formatCurrency(income)}
                 </p>
               </div>
-              <div className="p-2.5 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400">
-                <TrendingUp className="h-5 w-5" />
+              <div className="p-2 sm:p-2.5 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400">
+                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
             </div>
           </CardContent>
@@ -78,18 +76,18 @@ const DashboardHeader = ({
 
         {/* Expenses Card */}
         <Card className="border-red-500/20 bg-red-500/5 shadow-xs">
-          <CardContent className="p-4">
+          <CardContent className="p-3.5 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Monthly Expenses
                 </p>
-                <p className="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">
+                <p className="text-xl sm:text-2xl font-bold mt-1 text-red-600 dark:text-red-400">
                   {formatCurrency(expenses)}
                 </p>
               </div>
-              <div className="p-2.5 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400">
-                <TrendingDown className="h-5 w-5" />
+              <div className="p-2 sm:p-2.5 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400">
+                <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
             </div>
           </CardContent>
@@ -103,25 +101,23 @@ const DashboardHeader = ({
               : "border-destructive/20 bg-destructive/5"
           }`}
         >
-          <CardContent className="p-4">
+          <CardContent className="p-3.5 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Net Savings
                 </p>
                 <p
-                  className={`text-2xl font-bold mt-1 ${
-                    netSavings >= 0
-                      ? "text-primary"
-                      : "text-destructive"
+                  className={`text-xl sm:text-2xl font-bold mt-1 ${
+                    netSavings >= 0 ? "text-primary" : "text-destructive"
                   }`}
                 >
                   {netSavings >= 0 ? "+" : ""}
                   {formatCurrency(netSavings)}
                 </p>
               </div>
-              <div className="p-2.5 rounded-xl bg-secondary text-foreground">
-                <Scale className="h-5 w-5" />
+              <div className="p-2 sm:p-2.5 rounded-xl bg-secondary text-foreground">
+                <Scale className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
             </div>
           </CardContent>
@@ -133,7 +129,7 @@ const DashboardHeader = ({
         <Card className="shadow-xs">
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="space-y-1">
+              <div className="space-y-1 text-center sm:text-left">
                 <p className="text-sm font-semibold text-foreground">
                   Income vs Expenses Ratio
                 </p>
@@ -156,16 +152,16 @@ const DashboardHeader = ({
                       outerRadius={55}
                       paddingAngle={4}
                       dataKey="value"
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
+                      shape={(props) => (
+                        <Sector
+                          {...props}
                           fill={
-                            entry.name === "Income" ? COLORS[0] : COLORS[1]
+                            props.payload?.fill ||
+                            (props.name === "Income" ? "#10b981" : "#ef4444")
                           }
                         />
-                      ))}
-                    </Pie>
+                      )}
+                    />
                     <Tooltip
                       formatter={(value) =>
                         formatCurrency(value as number)
@@ -174,9 +170,10 @@ const DashboardHeader = ({
                         backgroundColor: "var(--card)",
                         border: "1px solid var(--border)",
                         borderRadius: "var(--radius)",
+                        fontSize: "12px",
                       }}
                     />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: "12px" }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>

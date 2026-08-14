@@ -6,7 +6,9 @@ import { useAuth } from "@/providers/AuthProvider";
 
 import DashboardNav from "@/components/DashboardNav";
 import AccountsSection from "@/components/AccountsSection";
-import MonthSelector, { getCurrentMonthString } from "@/components/MonthSelector";
+import MonthSelector, {
+  getCurrentMonthString,
+} from "@/components/MonthSelector";
 import DashboardHeader from "@/components/DashboardHeader";
 import TransactionsSection from "@/components/TransactionSection";
 import AnalyticsSection from "@/components/AnalyticsSection";
@@ -38,8 +40,8 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <DashboardNav />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8">
+        <div className="space-y-6 sm:space-y-8">
           {/* 1. Accounts Section (at the top) */}
           <AccountsSection />
 

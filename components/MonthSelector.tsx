@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 
@@ -57,34 +56,34 @@ const MonthSelector = ({
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-card rounded-xl border border-border">
-      <div className="flex items-center gap-2">
-        <div className="p-2 rounded-lg bg-primary/10 text-primary">
-          <Calendar className="h-4 w-4" />
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 bg-card rounded-xl border border-border shadow-xs">
+      <div className="flex items-center gap-2.5">
+        <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+          <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <p className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Viewing Period
           </p>
-          <p className="text-base font-bold text-foreground">
+          <p className="text-sm sm:text-base font-bold text-foreground">
             {formatMonthLabel(selectedMonth)}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
         {!isCurrentMonth && (
           <Button
             variant="outline"
             size="sm"
             onClick={() => onMonthChange(currentMonth)}
-            className="text-xs h-8 px-2.5"
+            className="text-xs h-8 px-2.5 shrink-0"
           >
             Current Month
           </Button>
         )}
 
-        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5 border border-border">
+        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-1 border border-border">
           <Button
             variant="ghost"
             size="icon"
@@ -103,7 +102,7 @@ const MonthSelector = ({
                 onMonthChange(e.target.value);
               }
             }}
-            className="text-xs font-semibold bg-transparent px-2 py-1 cursor-pointer focus:outline-hidden"
+            className="text-xs font-semibold bg-transparent px-1.5 py-0.5 cursor-pointer focus:outline-hidden text-center max-w-32.5"
             title="Select specific month"
           />
 

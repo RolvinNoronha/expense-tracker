@@ -84,14 +84,14 @@ const TransactionsList = ({ month }: TransactionsListProps) => {
 
   return (
     <Card className="shadow-xs">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+      <CardHeader className="px-4 py-4 sm:px-6 pb-3">
+        <div className="flex items-center justify-between gap-2">
           <div>
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
               <ReceiptText className="h-5 w-5 text-primary" />
               Latest Transactions
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               Showing latest {transactions.length} transaction
               {transactions.length !== 1 ? "s" : ""} for{" "}
               {formatMonthLabel(month)}
@@ -101,14 +101,14 @@ const TransactionsList = ({ month }: TransactionsListProps) => {
             variant="outline"
             size="sm"
             onClick={() => router.push("/transactions")}
-            className="text-xs gap-1.5"
+            className="text-xs gap-1.5 shrink-0"
           >
             View All
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 sm:px-6 pb-4">
         {isPending ? (
           <div className="py-12 flex items-center justify-center">
             <div className="text-center">
@@ -123,10 +123,10 @@ const TransactionsList = ({ month }: TransactionsListProps) => {
             <div className="w-10 h-10 rounded-full bg-secondary text-muted-foreground flex items-center justify-center mx-auto mb-2">
               <ReceiptText className="h-5 w-5" />
             </div>
-            <p className="font-medium text-foreground text-sm">
+            <p className="font-semibold text-foreground text-sm">
               No transactions for {formatMonthLabel(month)}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
               Add income, expense, or transfer transactions using the + button
               below.
             </p>
@@ -141,11 +141,11 @@ const TransactionsList = ({ month }: TransactionsListProps) => {
               return (
                 <div
                   key={transaction.transactionId}
-                  className="flex items-center justify-between p-3 rounded-xl border border-transparent hover:border-border hover:bg-secondary/40 transition-all gap-3"
+                  className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl border border-transparent hover:border-border hover:bg-secondary/40 transition-all gap-2 sm:gap-3"
                 >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                     <div
-                      className={`p-2.5 rounded-xl shrink-0 ${
+                      className={`p-2 sm:p-2.5 rounded-xl shrink-0 ${
                         isIncome
                           ? "bg-green-500/10 text-green-600 dark:text-green-400"
                           : isTransfer
@@ -163,18 +163,18 @@ const TransactionsList = ({ month }: TransactionsListProps) => {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-sm text-foreground truncate">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="font-semibold text-xs sm:text-sm text-foreground truncate">
                           {isTransfer
                             ? "Account Transfer"
                             : capitalizeWords(transaction.category || "General")}
                         </p>
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary text-muted-foreground shrink-0">
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground truncate max-w-30 sm:max-w-none">
                           {getAccountLabel(transaction)}
                         </span>
                       </div>
 
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      <p className="text-[11px] sm:text-xs text-muted-foreground truncate mt-0.5">
                         {transaction.description ||
                           (transaction.subcategory
                             ? capitalizeWords(transaction.subcategory)
@@ -187,7 +187,7 @@ const TransactionsList = ({ month }: TransactionsListProps) => {
 
                   <div className="text-right shrink-0">
                     <p
-                      className={`text-sm font-bold ${
+                      className={`text-xs sm:text-sm font-bold ${
                         isIncome
                           ? "text-green-600 dark:text-green-400"
                           : isTransfer
@@ -198,7 +198,7 @@ const TransactionsList = ({ month }: TransactionsListProps) => {
                       {isIncome ? "+" : isExpense ? "-" : "⇄"}
                       {formatCurrency(transaction.amount)}
                     </p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                    <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">
                       {formatDate(transaction.date)}
                     </p>
                   </div>

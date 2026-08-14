@@ -1,6 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState, useMemo } from "react";
+import { useInView } from "react-intersection-observer";
+import AppService from "@/services/AppService";
+import { Transaction, Account } from "@/store/interfaces";
 import {
   Card,
   CardContent,
@@ -10,69 +14,88 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowUpRight,
-  ArrowDownLeft,
-  ArrowRightLeft,
-  Edit2,
-  Trash2,
-  LoaderCircleIcon,
-  FilterX,
-  Wallet,
-} from "lucide-react";
-import { Account, Transaction } from "@/store/interfaces";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useFetchAccounts, useFetchTransactions } from "@/hooks/hooks";
-import { useInView } from "react-intersection-observer";
+import {
+  LoaderCircleIcon,
+  ArrowUpRight,
+  ArrowDownLeft,
+  ArrowRightLeft,
+  Edit2,
+  Trash2,
+  FilterX,
+  Wallet,
+} from "lucide-react";
+import categories from "@/lib/categories";
 import EditTransactionModal from "@/components/EditTransactionModal";
 import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
-import categories from "@/lib/categories";
+import { useFetchAccounts } from "@/hooks/hooks";
 
 const TransactionsTable = () => {
+  const { ref, inView } = useInView();
+  const queryClient = useQueryClient();
+
+  const { data: accountsData } = useFetchAccounts();
+  const accounts: Account[] = accountsData?.data?.accounts || [];
+
+  // Account ID to Name mapping
+  const accountMap = useMemo(() => {
+    const map = new Map<string, string>();
+    accounts.forEach((acc) => {
+      map.set(acc.accountId, acc.accountName);
+    });
+    return map;
+  }, [accounts]);
+
+  // Filter state
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  // Modals state
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
   const [deletingTransactionId, setDeletingTransactionId] = useState<
     string | null
   >(null);
 
-  const { data: accountsData } = useFetchAccounts();
-  const accounts: Account[] = accountsData?.data?.accounts || [];
-
-  const accountMap = new Map<string, string>();
-  accounts.forEach((acc) => {
-    accountMap.set(acc.accountId, acc.accountName);
-  });
-
-  const { ref, inView } = useInView();
-
-  const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useFetchTransactions({
-      accountId: selectedAccountId || undefined,
-      category: selectedCategory || undefined,
-      subcategory: selectedSubcategory || undefined,
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    useInfiniteQuery({
+      queryKey: [
+        "transactions",
+        selectedAccountId,
+        selectedCategory,
+        selectedSubcategory,
+      ],
+      queryFn: ({ pageParam }) =>
+        AppService.getTransactions({
+          limit: 15,
+          lastTransactionId: pageParam as string | undefined,
+          accountId: selectedAccountId || undefined,
+          category: selectedCategory || undefined,
+          subcategory: selectedSubcategory || undefined,
+        }),
+      initialPageParam: undefined as string | undefined,
+      getNextPageParam: (lastPage) => {
+        return lastPage.data.hasMore
+          ? lastPage.data.lastTransactionId
+          : undefined;
+      },
     });
 
   useEffect(() => {
-    if (data) {
-      const txns = data.pages.map((page) => page.data.transactions || []);
-      setTransactions(txns.flat());
-    }
-  }, [data]);
-
-  useEffect(() => {
-    if (inView && hasNextPage) {
+    if (inView && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
-  }, [inView, hasNextPage, fetchNextPage]);
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const transactions: Transaction[] = useMemo(() => {
+    return data?.pages.flatMap((page) => page.data.transactions) || [];
+  }, [data]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -131,13 +154,13 @@ const TransactionsTable = () => {
 
   return (
     <Card className="shadow-xs">
-      <CardHeader>
+      <CardHeader className="px-4 py-4 sm:px-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <CardTitle className="text-xl font-bold">
+            <CardTitle className="text-lg sm:text-xl font-bold">
               Transaction History
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               {transactions.length} transaction
               {transactions.length !== 1 ? "s" : ""} loaded
             </CardDescription>
@@ -156,13 +179,13 @@ const TransactionsTable = () => {
           )}
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
+      <CardContent className="px-3 sm:px-6 pb-6">
+        <div className="space-y-5">
           {/* Filters Bar: Account, Category, Subcategory */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-secondary/30 rounded-xl border border-border">
             {/* Filter by Account */}
             <div className="space-y-1">
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <label className="block text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Filter by Account
               </label>
               <Select
@@ -175,7 +198,7 @@ const TransactionsTable = () => {
                   setSelectedAccountId(value);
                 }}
               >
-                <SelectTrigger className="w-full bg-card">
+                <SelectTrigger className="w-full bg-card text-xs sm:text-sm">
                   <SelectValue placeholder="All Accounts" />
                 </SelectTrigger>
                 <SelectContent className="w-full">
@@ -194,7 +217,7 @@ const TransactionsTable = () => {
 
             {/* Filter by Category */}
             <div className="space-y-1">
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <label className="block text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Filter by Category
               </label>
               <Select
@@ -209,7 +232,7 @@ const TransactionsTable = () => {
                   setSelectedSubcategory("");
                 }}
               >
-                <SelectTrigger className="w-full bg-card">
+                <SelectTrigger className="w-full bg-card text-xs sm:text-sm">
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent className="w-full">
@@ -225,7 +248,7 @@ const TransactionsTable = () => {
 
             {/* Filter by Subcategory */}
             <div className="space-y-1">
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <label className="block text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Filter by Subcategory
               </label>
               <Select
@@ -241,7 +264,7 @@ const TransactionsTable = () => {
               >
                 <SelectTrigger
                   disabled={!selectedCategory}
-                  className="w-full bg-card"
+                  className="w-full bg-card text-xs sm:text-sm"
                 >
                   <SelectValue
                     placeholder={
@@ -267,7 +290,7 @@ const TransactionsTable = () => {
             </div>
           </div>
 
-          {/* Transactions Table */}
+          {/* Transactions Content */}
           {isPending ? (
             <div className="py-16 flex items-center justify-center">
               <div className="text-center">
@@ -282,7 +305,7 @@ const TransactionsTable = () => {
               <div className="w-12 h-12 rounded-full bg-secondary text-muted-foreground flex items-center justify-center mx-auto mb-3">
                 <Wallet className="h-6 w-6" />
               </div>
-              <p className="font-semibold text-foreground">
+              <p className="font-semibold text-foreground text-sm sm:text-base">
                 No transactions found
               </p>
               <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
@@ -303,7 +326,101 @@ const TransactionsTable = () => {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto rounded-xl border border-border">
+              {/* Mobile Card List View (sm:hidden) */}
+              <div className="block sm:hidden space-y-2.5">
+                {transactions.map((transaction) => {
+                  const isIncome = transaction.type === "income";
+                  const isTransfer = transaction.type === "transfer";
+                  const isExpense = transaction.type === "expense";
+
+                  return (
+                    <div
+                      key={transaction.transactionId}
+                      className="p-3 rounded-xl border border-border bg-card shadow-2xs space-y-2.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div
+                            className={`p-1.5 rounded-lg shrink-0 ${
+                              isIncome
+                                ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                                : isTransfer
+                                  ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                  : "bg-red-500/10 text-red-600 dark:text-red-400"
+                            }`}
+                          >
+                            {isIncome ? (
+                              <ArrowUpRight className="h-4 w-4" />
+                            ) : isTransfer ? (
+                              <ArrowRightLeft className="h-4 w-4" />
+                            ) : (
+                              <ArrowDownLeft className="h-4 w-4" />
+                            )}
+                          </div>
+                          <p className="font-semibold text-xs text-foreground truncate">
+                            {isTransfer
+                              ? "Transfer"
+                              : capitalizeWords(
+                                  transaction.category || "General",
+                                )}
+                          </p>
+                        </div>
+                        <p
+                          className={`text-sm font-bold shrink-0 ${
+                            isIncome
+                              ? "text-green-600 dark:text-green-400"
+                              : isTransfer
+                                ? "text-blue-600 dark:text-blue-400"
+                                : "text-red-600 dark:text-red-400"
+                          }`}
+                        >
+                          {isIncome ? "+" : isExpense ? "-" : "⇄"}
+                          {formatCurrency(transaction.amount)}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-secondary text-[11px] font-medium text-foreground truncate max-w-35">
+                          {getAccountLabel(transaction)}
+                        </span>
+                        <span>{formatDate(transaction.date)}</span>
+                      </div>
+
+                      {transaction.description && (
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {transaction.description}
+                        </p>
+                      )}
+
+                      <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/50">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingTransaction(transaction)}
+                          className="h-7 text-xs px-2 text-muted-foreground hover:text-foreground"
+                        >
+                          <Edit2 className="h-3.5 w-3.5 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setDeletingTransactionId(transaction.transactionId)
+                          }
+                          className="h-7 text-xs px-2 text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View (hidden sm:block) */}
+              <div className="hidden sm:block overflow-x-auto rounded-xl border border-border">
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/40">
@@ -344,15 +461,15 @@ const TransactionsTable = () => {
                                 isIncome
                                   ? "bg-green-500/10 text-green-600 dark:text-green-400"
                                   : isTransfer
-                                  ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                                  : "bg-red-500/10 text-red-600 dark:text-red-400"
+                                    ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                    : "bg-red-500/10 text-red-600 dark:text-red-400"
                               }`}
                               title={
                                 isIncome
                                   ? "Income"
                                   : isTransfer
-                                  ? "Transfer"
-                                  : "Expense"
+                                    ? "Transfer"
+                                    : "Expense"
                               }
                             >
                               {isIncome ? (
@@ -396,8 +513,8 @@ const TransactionsTable = () => {
                               isIncome
                                 ? "text-green-600 dark:text-green-400"
                                 : isTransfer
-                                ? "text-blue-600 dark:text-blue-400"
-                                : "text-red-600 dark:text-red-400"
+                                  ? "text-blue-600 dark:text-blue-400"
+                                  : "text-red-600 dark:text-red-400"
                             }`}
                           >
                             {isIncome ? "+" : isExpense ? "-" : "⇄"}

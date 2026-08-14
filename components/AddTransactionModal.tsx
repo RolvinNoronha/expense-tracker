@@ -25,7 +25,6 @@ import {
   ArrowRightLeft,
   ArrowDownLeft,
   ArrowUpRight,
-  Wallet,
 } from "lucide-react";
 import { AddTransaction, TransactionType, Account } from "@/store/interfaces";
 import { toast } from "sonner";
