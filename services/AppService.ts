@@ -1,40 +1,41 @@
 import axios, { type AxiosRequestConfig } from "axios";
 import type {
+  Account,
+  AddAccount,
   AddOwedEntry,
   AddTransaction,
+  AnalyticsData,
   APIResponse,
-  Balance,
+  MonthlySummaryData,
   OwedEntry,
   RequestMethod,
   Transaction,
+  UpdateTransaction,
 } from "@/store/interfaces";
 import { auth } from "@/firebase/firebase";
 
-interface GetTransactionsResponse extends APIResponse {
-  data: {
-    transactions: Transaction[];
-    hasMore: boolean;
-    lastTransactionId: string;
-  };
-}
+export interface GetAccountsResponse extends APIResponse<{
+  accounts: Account[];
+}> {}
 
-interface GetTenTransactionsResponse extends APIResponse {
-  data: {
-    transactions: Transaction[];
+export interface GetMonthlySummaryResponse extends APIResponse<{
+  monthlySummary: {
+    data: MonthlySummaryData;
+    created?: boolean;
   };
-}
+}> {}
 
-interface GetBalanceResponse extends APIResponse {
-  data: {
-    balance: Balance;
-  };
-}
+export interface GetAnalyticsResponse extends APIResponse<AnalyticsData> {}
 
-interface GetOwedEntriesResponse extends APIResponse {
-  data: {
-    entries: OwedEntry[];
-  };
-}
+export interface GetTransactionsResponse extends APIResponse<{
+  transactions: Transaction[];
+  hasMore: boolean;
+  lastTransactionId?: string;
+}> {}
+
+export interface GetOwedEntriesResponse extends APIResponse<{
+  entries: OwedEntry[];
+}> {}
 
 class AppServiceClass {
   private static instance: AppServiceClass;
@@ -86,31 +87,99 @@ class AppServiceClass {
     return AppServiceClass.instance;
   }
 
-  getBalance = async () => {
+  // Accounts
+  getAccounts = async () => {
     await this.initToken();
-    return this.request<GetBalanceResponse>(`/api/balance`, null, null, "GET");
+    return this.request<GetAccountsResponse>(`/api/account`, null, null, "GET");
   };
 
-  addTransaction = async (t: AddTransaction, balanceId: string | undefined) => {
+  addAccount = async (account: AddAccount) => {
     await this.initToken();
     return this.request<APIResponse>(
-      `/api/transaction?balanceId=${balanceId ? balanceId : ""}`,
+      `/api/account`,
+      null,
+      JSON.stringify(account),
+      "POST",
+    );
+  };
+
+  // Monthly Summary
+  getMonthlySummary = async (month: string) => {
+    await this.initToken();
+    return this.request<GetMonthlySummaryResponse>(
+      `/api/monthly-summary?month=${encodeURIComponent(month)}`,
+      null,
+      null,
+      "GET",
+    );
+  };
+
+  // Analytics
+  getAnalytics = async (month: string) => {
+    await this.initToken();
+    return this.request<GetAnalyticsResponse>(
+      `/api/analytics?month=${encodeURIComponent(month)}`,
+      null,
+      null,
+      "GET",
+    );
+  };
+
+  // Transactions
+  getTransactions = async (params?: {
+    lastTransactionId?: string;
+    category?: string;
+    subcategory?: string;
+    accountId?: string;
+    month?: string;
+    limit?: number;
+  }) => {
+    await this.initToken();
+    const searchParams = new URLSearchParams();
+    if (params?.lastTransactionId) {
+      searchParams.set("lastTransactionId", params.lastTransactionId);
+    }
+    if (params?.category) {
+      searchParams.set("category", params.category);
+    }
+    if (params?.subcategory) {
+      searchParams.set("subcategory", params.subcategory);
+    }
+    if (params?.accountId) {
+      searchParams.set("accountId", params.accountId);
+    }
+    if (params?.month) {
+      searchParams.set("month", params.month);
+    }
+    if (params?.limit) {
+      searchParams.set("limit", params.limit.toString());
+    }
+
+    const queryString = searchParams.toString();
+    const url = `/api/transaction${queryString ? `?${queryString}` : ""}`;
+
+    return this.request<GetTransactionsResponse>(url, null, null, "GET");
+  };
+
+  getRecentTransactions = async (month: string, limit = 10) => {
+    await this.initToken();
+    return this.getTransactions({ month, limit });
+  };
+
+  addTransaction = async (t: AddTransaction) => {
+    await this.initToken();
+    return this.request<APIResponse>(
+      `/api/transaction`,
       null,
       JSON.stringify(t),
       "POST",
     );
   };
 
-  updateTransaction = async (
-    txnId: string,
-    txn: AddTransaction,
-    balanceId: string | undefined,
-  ) => {
+  updateTransaction = async (txnId: string, txn: UpdateTransaction) => {
     await this.initToken();
     return this.request<APIResponse>(
-      `/api/transaction?transactionId=${txnId}&balanceId=${
-        balanceId ? balanceId : ""
-      }`,
+      `/api/transaction?transactionId=${encodeURIComponent(txnId)}`,
       null,
       JSON.stringify(txn),
       "PATCH",
@@ -120,51 +189,14 @@ class AppServiceClass {
   deleteTransaction = async (txnId: string) => {
     await this.initToken();
     return this.request<APIResponse>(
-      `/api/transaction?transactionId=${txnId}`,
+      `/api/transaction?transactionId=${encodeURIComponent(txnId)}`,
       null,
       null,
       "DELETE",
     );
   };
 
-  getTransactions = async (
-    lastTransactionId?: string,
-    category?: string,
-    subcategory?: string,
-  ) => {
-    await this.initToken();
-    return this.request<GetTransactionsResponse>(
-      `/api/transaction?lastTransactionId=${
-        lastTransactionId ? lastTransactionId : ""
-      }&category=${category ? category : ""}&subcategory=${
-        subcategory ? subcategory : ""
-      }`,
-      null,
-      null,
-      "GET",
-    );
-  };
-
-  getTenTransactions = async () => {
-    await this.initToken();
-    return this.request<GetTenTransactionsResponse>(
-      `/api/ten-transactions`,
-      null,
-      null,
-      "GET",
-    );
-  };
-
-  getTransactionsDays = async (days: number) => {
-    await this.initToken();
-    return this.request<GetTransactionsResponse>(
-      `/api/transactions-days/${days}`,
-      null,
-      null,
-      "GET",
-    );
-  };
-
+  // Owed Entries
   getOwedEntries = async () => {
     await this.initToken();
     return this.request<GetOwedEntriesResponse>(
@@ -188,7 +220,7 @@ class AppServiceClass {
   markOwedEntryPaid = async (owedId: string) => {
     await this.initToken();
     return this.request<APIResponse>(
-      `/api/owed-to-me?owedId=${owedId}`,
+      `/api/owed-to-me?owedId=${encodeURIComponent(owedId)}`,
       null,
       null,
       "PATCH",
@@ -198,7 +230,7 @@ class AppServiceClass {
   deleteOwedEntry = async (owedId: string) => {
     await this.initToken();
     return this.request<APIResponse>(
-      `/api/owed-to-me?owedId=${owedId}`,
+      `/api/owed-to-me?owedId=${encodeURIComponent(owedId)}`,
       null,
       null,
       "DELETE",

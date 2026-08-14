@@ -30,9 +30,10 @@ const getAnalytics = async (request: NextRequest) => {
     const startDate = new Date(Date.UTC(year, monthNumber - 1, 1));
     const endDate = new Date(Date.UTC(year, monthNumber, 1));
 
+    const userId = user?.uid || (user as any)?.userId;
     const snapshot = await adminDb
       .collection("transactions")
-      .where("userId", "==", user?.userId)
+      .where("userId", "==", userId)
       .where("date", ">=", Timestamp.fromDate(startDate))
       .where("date", "<", Timestamp.fromDate(endDate))
       .orderBy("date", "asc")
@@ -66,10 +67,13 @@ const getAnalytics = async (request: NextRequest) => {
     );
 
     const byCategory = transactions
-      .filter((transaction) => transaction.type !== "transfer")
+      .filter(
+        (transaction) =>
+          transaction.type !== "transfer" && Boolean(transaction.category),
+      )
       .reduce(
         (acc, transaction) => {
-          const category = transaction.category;
+          const category = transaction.category as string;
 
           if (!acc[category]) {
             acc[category] = {

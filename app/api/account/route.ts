@@ -42,7 +42,7 @@ const addAccount = async (request: NextRequest) => {
       );
     }
 
-    adminDb.collection("accounts").add({
+    await adminDb.collection("accounts").add({
       userId: user?.uid,
       accountName: accountName,
       balance: balance ? balance : 0,

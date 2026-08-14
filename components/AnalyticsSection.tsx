@@ -16,326 +16,314 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Line,
   LineChart,
+  Line,
 } from "recharts";
+import { useFetchAnalytics } from "@/hooks/hooks";
+import { formatMonthLabel } from "@/components/MonthSelector";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import useTimeRangeStore from "@/store/time-range-store";
-import { Transaction } from "@/store/interfaces";
-import { useFetchTransactionsDays } from "@/hooks/hooks";
-import { useEffect, useState } from "react";
+  BarChart3,
+  TrendingUp,
+  ArrowDownLeft,
+  ArrowUpRight,
+  ArrowRightLeft,
+} from "lucide-react";
 
-const AnalyticsSection = () => {
-  const { updatedRange, range } = useTimeRangeStore();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+interface AnalyticsSectionProps {
+  month: string;
+}
 
-  const { data, isPending } = useFetchTransactionsDays(range);
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+};
 
-  useEffect(() => {
-    if (data) {
-      setTransactions(data.data.transactions);
-    }
-  }, [data]);
+const capitalizeWords = (str: string) => {
+  return str
+    .split(/[-\s]/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
 
-  // Generate time-based bar chart data
-  const generateTimeBasedData = () => {
-    const dataMap: Record<
-      string,
-      { income: number; expenses: number; timestamp: number }
-    > = {};
+const AnalyticsSection = ({ month }: AnalyticsSectionProps) => {
+  const { data, isPending } = useFetchAnalytics(month);
+  const monthLabel = formatMonthLabel(month);
 
-    transactions.forEach((transaction) => {
-      const dateInMillis =
-        transaction.date._seconds * 1000 +
-        transaction.date._nanoseconds / 1000000;
-      const date = new Date(dateInMillis);
-      const dateStr = date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
+  const analyticsData = data?.data;
 
-      const startOfDay = new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate(),
-      ).getTime();
+  // Process category data
+  const categoryData = analyticsData?.byCategory
+    ? Object.entries(analyticsData.byCategory)
+        .map(([category, info]) => ({
+          category: capitalizeWords(category),
+          amount: info.amount,
+          count: info.count,
+        }))
+        .sort((a, b) => b.amount - a.amount)
+    : [];
 
-      if (!dataMap[dateStr]) {
-        dataMap[dateStr] = {
-          income: 0,
-          expenses: 0,
-          timestamp: startOfDay,
-        };
-      }
+  // Process daily data
+  const dailyData = analyticsData?.byDay
+    ? Object.entries(analyticsData.byDay)
+        .map(([dateStr, values]) => {
+          const date = new Date(dateStr);
+          const formattedDate = date.toLocaleDateString("en-US", {
+            day: "numeric",
+            month: "short",
+            timeZone: "UTC",
+          });
+          return {
+            date: formattedDate,
+            rawDate: dateStr,
+            income: values.income || 0,
+            expense: values.expense || 0,
+            transfer: values.transfer || 0,
+          };
+        })
+        .sort((a, b) => a.rawDate.localeCompare(b.rawDate))
+    : [];
 
-      if (transaction.type === "income") {
-        dataMap[dateStr].income += transaction.amount;
-      } else {
-        dataMap[dateStr].expenses += transaction.amount;
-      }
-    });
-
-    return Object.entries(dataMap)
-      .map(([date, totals]) => ({
-        date,
-        income: totals.income,
-        expenses: totals.expenses,
-        timestamp: totals.timestamp,
-      }))
-      .sort((a, b) => a.timestamp - b.timestamp);
+  const byType = analyticsData?.byType || {
+    income: { count: 0, amount: 0 },
+    expense: { count: 0, amount: 0 },
+    transfer: { count: 0, amount: 0 },
   };
 
-  // Generate category-based data
-  const generateCategoryData = () => {
-    const categoryTotals: Record<string, { income: number; expenses: number }> =
-      {};
-
-    transactions.forEach((transaction) => {
-      if (!categoryTotals[transaction.category]) {
-        categoryTotals[transaction.category] = { income: 0, expenses: 0 };
-      }
-
-      if (transaction.type === "income") {
-        categoryTotals[transaction.category].income += transaction.amount;
-      } else {
-        categoryTotals[transaction.category].expenses += transaction.amount;
-      }
-    });
-
-    return Object.entries(categoryTotals).map(([category, totals]) => ({
-      category,
-      income: totals.income,
-      expenses: totals.expenses,
-    }));
-  };
-
-  const generateTrendData = () => {
-    return generateTimeBasedData();
-  };
-
-  const timeBasedData = generateTimeBasedData();
-  const categoryData = generateCategoryData();
-  const trendData = generateTrendData();
+  const hasData =
+    categoryData.length > 0 ||
+    dailyData.length > 0 ||
+    byType.income.count > 0 ||
+    byType.expense.count > 0 ||
+    byType.transfer.count > 0;
 
   if (isPending) {
     return (
-      <div className="h-full bg-background flex items-center justify-center">
+      <div className="py-12 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading data...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-3"></div>
+          <p className="text-xs text-muted-foreground">
+            Loading analytics for {monthLabel}...
+          </p>
         </div>
       </div>
     );
   }
 
+  if (!hasData) {
+    return (
+      <Card className="shadow-xs">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            Monthly Analytics
+          </CardTitle>
+          <CardDescription>
+            Analytics and breakdowns for {monthLabel}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-10">
+            <div className="w-10 h-10 rounded-full bg-secondary text-muted-foreground flex items-center justify-center mx-auto mb-2">
+              <BarChart3 className="h-5 w-5" />
+            </div>
+            <p className="font-medium text-foreground text-sm">
+              No analytics data for {monthLabel}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Add transactions for this month to see spending trends and
+              category breakdowns.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Trend Chart */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Trend</CardTitle>
-              <CardDescription>
-                Income and expenses over the last {range} days
-              </CardDescription>
-            </div>
-            <Select
-              value={String(range)}
-              onValueChange={(value) => updatedRange(Number(value))}
-            >
-              <SelectTrigger className="w-36 h-10 z-10">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">Last 7 days</SelectItem>
-                <SelectItem value="14">Last 14 days</SelectItem>
-                <SelectItem value="30">Last 30 days</SelectItem>
-                <SelectItem value="90">Last 90 days</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="date" stroke="var(--muted-foreground)" />
-              <YAxis stroke="var(--muted-foreground)" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius)",
-                }}
-                formatter={(value) =>
-                  new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: "INR",
-                    minimumFractionDigits: 0,
-                  }).format(value as number)
-                }
-              />
-              <Line
-                type="monotone"
-                dataKey="income"
-                stroke="#16a34a"
-                strokeWidth={2}
-                dot={false}
-                name="Income"
-              />
-              <Line
-                type="monotone"
-                dataKey="expenses"
-                stroke="#dc2626"
-                strokeWidth={2}
-                dot={false}
-                name="Expenses"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {/* Analytics Section Header */}
+      <div>
+        <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-primary" />
+          Analytics & Trends ({monthLabel})
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          Detailed insights into your spending and income for {monthLabel}
+        </p>
+      </div>
 
-      {/* Time-based Bar Chart */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Income vs Expenses</CardTitle>
-              <CardDescription>
-                Daily breakdown for the selected period
-              </CardDescription>
+      {/* Breakdown by Type Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="shadow-xs border-green-500/20 bg-green-500/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Income Transactions
+                </p>
+                <p className="text-xl font-bold mt-1 text-green-600 dark:text-green-400">
+                  {formatCurrency(byType.income?.amount || 0)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {byType.income?.count || 0} transaction
+                  {byType.income?.count !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400">
+                <ArrowUpRight className="h-5 w-5" />
+              </div>
             </div>
-            <Select
-              value={String(range)}
-              onValueChange={(value) => updatedRange(Number(value))}
-            >
-              <SelectTrigger className="w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">Last 7 days</SelectItem>
-                <SelectItem value="14">Last 14 days</SelectItem>
-                <SelectItem value="30">Last 30 days</SelectItem>
-                <SelectItem value="90">Last 90 days</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={timeBasedData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="date" stroke="var(--muted-foreground)" />
-              <YAxis stroke="var(--muted-foreground)" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius)",
-                }}
-                formatter={(value) =>
-                  new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: "INR",
-                    minimumFractionDigits: 0,
-                  }).format(value as number)
-                }
-              />
-              <Legend />
-              <Bar
-                dataKey="income"
-                fill="#16a34a"
-                name="Income"
-                radius={[8, 8, 0, 0]}
-              />
-              <Bar
-                dataKey="expenses"
-                fill="#dc2626"
-                name="Expenses"
-                radius={[8, 8, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Category-based Bar Chart */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Expenses by Category</CardTitle>
-              <CardDescription>
-                Breakdown of spending across different categories
-              </CardDescription>
+        <Card className="shadow-xs border-red-500/20 bg-red-500/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Expense Transactions
+                </p>
+                <p className="text-xl font-bold mt-1 text-red-600 dark:text-red-400">
+                  {formatCurrency(byType.expense?.amount || 0)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {byType.expense?.count || 0} transaction
+                  {byType.expense?.count !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400">
+                <ArrowDownLeft className="h-5 w-5" />
+              </div>
             </div>
-            <Select
-              value={String(range)}
-              onValueChange={(value) => updatedRange(Number(value))}
-            >
-              <SelectTrigger className="w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">Last 7 days</SelectItem>
-                <SelectItem value="14">Last 14 days</SelectItem>
-                <SelectItem value="30">Last 30 days</SelectItem>
-                <SelectItem value="90">Last 90 days</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {categoryData.length === 0 ? (
-            <div className="flex items-center justify-center h-80 text-muted-foreground">
-              <p>No transaction data available</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-blue-500/20 bg-blue-500/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Transfers
+                </p>
+                <p className="text-xl font-bold mt-1 text-blue-600 dark:text-blue-400">
+                  {formatCurrency(byType.transfer?.amount || 0)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {byType.transfer?.count || 0} transfer
+                  {byType.transfer?.count !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                <ArrowRightLeft className="h-5 w-5" />
+              </div>
             </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={categoryData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="category" stroke="var(--muted-foreground)" />
-                <YAxis stroke="var(--muted-foreground)" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius)",
-                  }}
-                  formatter={(value) =>
-                    new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: "INR",
-                      minimumFractionDigits: 0,
-                    }).format(value as number)
-                  }
-                />
-                <Legend />
-                <Bar
-                  dataKey="income"
-                  fill="#16a34a"
-                  name="Income"
-                  radius={[8, 8, 0, 0]}
-                />
-                <Bar
-                  dataKey="expenses"
-                  fill="#dc2626"
-                  name="Expenses"
-                  radius={[8, 8, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Daily Income & Expense Trend */}
+      {dailyData.length > 0 && (
+        <Card className="shadow-xs">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Daily Income vs Expense Trend
+            </CardTitle>
+            <CardDescription>
+              Day-by-day cash flow activity for {monthLabel}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dailyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="date" stroke="var(--muted-foreground)" />
+                  <YAxis stroke="var(--muted-foreground)" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--radius)",
+                    }}
+                    formatter={(value) => formatCurrency(value as number)}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="income"
+                    stroke="#10b981"
+                    strokeWidth={2.5}
+                    dot={{ r: 3 }}
+                    name="Income"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="expense"
+                    stroke="#ef4444"
+                    strokeWidth={2.5}
+                    dot={{ r: 3 }}
+                    name="Expense"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="transfer"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    strokeDasharray="4 4"
+                    dot={{ r: 2 }}
+                    name="Transfer"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Expenses by Category */}
+      {categoryData.length > 0 && (
+        <Card className="shadow-xs">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              Expenses & Income by Category
+            </CardTitle>
+            <CardDescription>
+              Breakdown of total amounts per category for {monthLabel}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={categoryData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="category" stroke="var(--muted-foreground)" />
+                  <YAxis stroke="var(--muted-foreground)" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--radius)",
+                    }}
+                    formatter={(value) => formatCurrency(value as number)}
+                  />
+                  <Bar
+                    dataKey="amount"
+                    fill="var(--primary)"
+                    name="Amount"
+                    radius={[6, 6, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

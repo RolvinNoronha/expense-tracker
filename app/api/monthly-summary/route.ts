@@ -16,7 +16,8 @@ const getMonthlySummary = async (request: NextRequest) => {
 
   try {
     const month = await monthSchema.parseAsync(monthParam);
-    const docId = `${user?.userId}_${month}`;
+    const userId = user?.uid || (user as any)?.userId;
+    const docId = `${userId}_${month}`;
     const summaryRef = adminDb.collection("monthly-summary").doc(docId);
 
     const monthlySummary = await adminDb.runTransaction(async (tx) => {
@@ -27,7 +28,7 @@ const getMonthlySummary = async (request: NextRequest) => {
       }
 
       const newMsData = {
-        userId: user?.userId,
+        userId: userId,
         month: month,
         totalIncome: 0,
         totalExpense: 0,

@@ -2,10 +2,14 @@
 
 import TransactionsList from "@/components/TransactionList";
 
-const TransactionsSection = () => {
+interface TransactionsSectionProps {
+  month: string;
+}
+
+const TransactionsSection = ({ month }: TransactionsSectionProps) => {
   return (
     <div className="space-y-6">
-      <TransactionsList />
+      <TransactionsList month={month} />
     </div>
   );
 };

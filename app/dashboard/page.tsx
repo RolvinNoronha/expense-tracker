@@ -5,30 +5,23 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
 
 import DashboardNav from "@/components/DashboardNav";
+import AccountsSection from "@/components/AccountsSection";
+import MonthSelector, { getCurrentMonthString } from "@/components/MonthSelector";
 import DashboardHeader from "@/components/DashboardHeader";
 import TransactionsSection from "@/components/TransactionSection";
 import AnalyticsSection from "@/components/AnalyticsSection";
 import AddTransactionModal from "@/components/AddTransactionModal";
-import { useFetchBalance } from "@/hooks/hooks";
-import useBalanceStore from "@/store/balance-store";
-
-type BalanceData = {
-  expense: number;
-  income: number;
-  balance: number;
-};
+import { useFetchMonthlySummary } from "@/hooks/hooks";
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { updateBalance } = useBalanceStore();
 
-  const [balanceData, setBalanceData] = useState<BalanceData>({
-    balance: 0,
-    expense: 0,
-    income: 0,
-  });
-  const { data, isPending } = useFetchBalance();
+  const [selectedMonth, setSelectedMonth] = useState<string>(
+    getCurrentMonthString(),
+  );
+
+  const { data: summaryData } = useFetchMonthlySummary(selectedMonth);
 
   useEffect(() => {
     // Check if user is authenticated
@@ -36,42 +29,42 @@ export default function DashboardPage() {
       router.push("/login");
       return;
     }
+  }, [user, router]);
 
-    if (data) {
-      const income = data?.data.balance.totalIncome;
-      const expense = data.data.balance.totalExpense;
-      const balance = income - expense;
-
-      setBalanceData({ income, expense, balance });
-      updateBalance(data.data.balance);
-    }
-  }, [router, data]);
-
-  if (isPending) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+  const monthlySummary = summaryData?.data?.monthlySummary?.data;
+  const income = monthlySummary?.totalIncome || 0;
+  const expenses = monthlySummary?.totalExpense || 0;
 
   return (
     <div className="min-h-screen bg-background">
       <DashboardNav />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
-          <DashboardHeader
-            balance={balanceData.balance}
-            income={balanceData.income}
-            expenses={balanceData.expense}
+          {/* 1. Accounts Section (at the top) */}
+          <AccountsSection />
+
+          {/* 2. Month Selector Option */}
+          <MonthSelector
+            selectedMonth={selectedMonth}
+            onMonthChange={setSelectedMonth}
           />
-          <TransactionsSection />
-          <AnalyticsSection />
+
+          {/* 3. Income and Expense for the selected month */}
+          <DashboardHeader
+            month={selectedMonth}
+            income={income}
+            expenses={expenses}
+          />
+
+          {/* 4. Latest 10 Transactions for that month */}
+          <TransactionsSection month={selectedMonth} />
+
+          {/* 5. Analytics for that month */}
+          <AnalyticsSection month={selectedMonth} />
         </div>
       </main>
+
+      {/* Floating Add Transaction Button / Modal */}
       <AddTransactionModal />
     </div>
   );

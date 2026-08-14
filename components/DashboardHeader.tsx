@@ -9,25 +9,29 @@ import {
   Legend,
   Tooltip,
 } from "recharts";
-import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale } from "lucide-react";
+import { formatMonthLabel } from "@/components/MonthSelector";
 
 interface DashboardHeaderProps {
-  balance: number;
+  month: string;
   income: number;
   expenses: number;
 }
 
 const DashboardHeader = ({
-  balance,
+  month,
   income,
   expenses,
 }: DashboardHeaderProps) => {
+  const netSavings = income - expenses;
+  const monthLabel = formatMonthLabel(month);
+
   const chartData = [
     { name: "Income", value: income },
     { name: "Expenses", value: expenses },
-  ];
+  ].filter((item) => item.value > 0);
 
-  const COLORS = ["#a78bfa", "#f87171"];
+  const COLORS = ["#10b981", "#ef4444"];
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -40,97 +44,146 @@ const DashboardHeader = ({
 
   return (
     <div className="space-y-4">
-      {/* Balance Card */}
-      <Card className="bg-linear-to-br from-primary/10 to-primary/5 border-primary/20">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground">
-                Total Balance
-              </p>
-              <p
-                className={`text-4xl font-bold mt-2 ${
-                  balance >= 0 ? "text-primary" : "text-destructive"
-                }`}
-              >
-                {formatCurrency(balance)}
-              </p>
-            </div>
-            <Wallet className="h-12 w-12 text-primary/40" />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Monthly Summary Header */}
+      <div>
+        <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <Scale className="h-5 w-5 text-primary" />
+          Monthly Overview ({monthLabel})
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          Income and expenses recorded for {monthLabel}
+        </p>
+      </div>
 
-      {/* Income and Expenses Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Income, Expenses, and Net Savings Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Income Card */}
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="border-green-500/20 bg-green-500/5 shadow-xs">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-muted-foreground">
-                  Total Income
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Monthly Income
                 </p>
-                <p className="text-3xl font-bold mt-2 text-green-600 dark:text-green-400">
+                <p className="text-2xl font-bold mt-1 text-green-600 dark:text-green-400">
                   {formatCurrency(income)}
                 </p>
               </div>
-              <TrendingUp className="h-10 w-10 text-green-600/40 dark:text-green-400/40" />
+              <div className="p-2.5 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400">
+                <TrendingUp className="h-5 w-5" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Expenses Card */}
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="border-red-500/20 bg-red-500/5 shadow-xs">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-muted-foreground">
-                  Total Expenses
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Monthly Expenses
                 </p>
-                <p className="text-3xl font-bold mt-2 text-red-600 dark:text-red-400">
+                <p className="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">
                   {formatCurrency(expenses)}
                 </p>
               </div>
-              <TrendingDown className="h-10 w-10 text-red-600/40 dark:text-red-400/40" />
+              <div className="p-2.5 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400">
+                <TrendingDown className="h-5 w-5" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Net Savings Card */}
+        <Card
+          className={`shadow-xs ${
+            netSavings >= 0
+              ? "border-primary/20 bg-primary/5"
+              : "border-destructive/20 bg-destructive/5"
+          }`}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Net Savings
+                </p>
+                <p
+                  className={`text-2xl font-bold mt-1 ${
+                    netSavings >= 0
+                      ? "text-primary"
+                      : "text-destructive"
+                  }`}
+                >
+                  {netSavings >= 0 ? "+" : ""}
+                  {formatCurrency(netSavings)}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-secondary text-foreground">
+                <Scale className="h-5 w-5" />
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Pie Chart */}
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-md font-bold text-muted-foreground mb-4">
-            Income vs Expenses
-          </p>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, value }) =>
-                  `${name}: ${formatCurrency(value as number)}`
-                }
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => formatCurrency(value as number)} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {/* Visual Distribution Chart */}
+      {(income > 0 || expenses > 0) && (
+        <Card className="shadow-xs">
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-foreground">
+                  Income vs Expenses Ratio
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {income > 0
+                    ? `Expenses are ${Math.round(
+                        (expenses / income) * 100,
+                      )}% of income`
+                    : "No income recorded for this month"}
+                </p>
+              </div>
+              <div className="w-full sm:w-80 h-44">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={35}
+                      outerRadius={55}
+                      paddingAngle={4}
+                      dataKey="value"
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={
+                            entry.name === "Income" ? COLORS[0] : COLORS[1]
+                          }
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) =>
+                        formatCurrency(value as number)
+                      }
+                      contentStyle={{
+                        backgroundColor: "var(--card)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "var(--radius)",
+                      }}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

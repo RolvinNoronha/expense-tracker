@@ -36,10 +36,11 @@ const DeleteConfirmationModal = ({
 
       if (result.success) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["balance"] }),
+          queryClient.invalidateQueries({ queryKey: ["accounts"] }),
+          queryClient.invalidateQueries({ queryKey: ["monthly-summary"] }),
+          queryClient.invalidateQueries({ queryKey: ["analytics"] }),
           queryClient.invalidateQueries({ queryKey: ["transactions"] }),
-          queryClient.invalidateQueries({ queryKey: ["ten-transactions"] }),
-          queryClient.invalidateQueries({ queryKey: ["transaction-days"] }),
+          queryClient.invalidateQueries({ queryKey: ["recent-transactions"] }),
         ]);
         toast.success("Successfully deleted transaction");
       }

@@ -92,6 +92,11 @@ const updateTransactionSchema = z.object({
 const addTransaction = async (request: NextRequest) => {
   const user = request.user;
   const body = await request.json();
+  const month = new Date().toLocaleDateString("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+  });
+  const summaryId = `${user?.uid}_${month}`;
 
   try {
     const transaction = await transactionSchema.parseAsync(body);
@@ -101,13 +106,16 @@ const addTransaction = async (request: NextRequest) => {
       const fromAccountRef = adminDb
         .collection("accounts")
         .doc(transaction.accountId);
+      const summaryRef = adminDb.collection("monthly-summary").doc(summaryId);
 
       const data = (await fromAccountRef.get()).data();
-      if (!data || transaction.amount > data.balance) {
-        return {
-          success: false,
-          message: "Insufficient balance in the account",
-        };
+      if (transaction.type === "expense" || transaction.type === "transfer") {
+        if (!data || transaction.amount > (data.balance ?? 0)) {
+          return {
+            success: false,
+            message: "Insufficient balance in the account",
+          };
+        }
       }
 
       if (transaction.type !== "transfer") {
@@ -115,6 +123,7 @@ const addTransaction = async (request: NextRequest) => {
           userId: user?.uid,
           amount: transaction.amount,
           account: transaction.accountId,
+          accountId: transaction.accountId,
           currency: "INR",
           date: Timestamp.fromDate(transaction.date),
           type: transaction.type,
@@ -126,9 +135,24 @@ const addTransaction = async (request: NextRequest) => {
           updatedAt: Timestamp.now(),
         });
 
+        const balanceChange =
+          transaction.type === "income"
+            ? transaction.amount
+            : -transaction.amount;
+
         tx.update(fromAccountRef, {
-          balance: FieldValue.increment(-transaction.amount),
+          balance: FieldValue.increment(balanceChange),
         });
+
+        if (transaction.type === "income") {
+          tx.update(summaryRef, {
+            totalIncome: FieldValue.increment(transaction.amount),
+          });
+        } else if (transaction.type === "expense") {
+          tx.update(summaryRef, {
+            totalExpense: FieldValue.increment(transaction.amount),
+          });
+        }
 
         return { success: true, message: "Successfully added transaction" };
       }
@@ -138,21 +162,24 @@ const addTransaction = async (request: NextRequest) => {
         .doc(transaction.toAccountId);
 
       tx.set(transactionRef, {
+        userId: user?.uid,
+        amount: transaction.amount,
         type: transaction.type,
         accountId: transaction.accountId,
+        account: transaction.accountId,
         currency: "INR",
         toAccountId: transaction.toAccountId,
-        description: transaction.description,
+        description: transaction.description ?? "",
         date: Timestamp.fromDate(transaction.date),
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       });
 
-      tx.set(fromAccountRef, {
+      tx.update(fromAccountRef, {
         balance: FieldValue.increment(-transaction.amount),
       });
 
-      tx.set(toAccountRef, {
+      tx.update(toAccountRef, {
         balance: FieldValue.increment(transaction.amount),
       });
 
@@ -212,39 +239,41 @@ const getTransaction = async (request: NextRequest) => {
   const lastTransaction = searchParams.get("lastTransactionId");
   const category = searchParams.get("category");
   const subcategory = searchParams.get("subcategory");
+  const accountId = searchParams.get("accountId");
+  const month = searchParams.get("month");
+  const limitParam = searchParams.get("limit");
   const user = request.user;
-  const limit = 10;
+  const limit = limitParam ? parseInt(limitParam, 10) : 10;
+  const userId = user?.uid || (user as any)?.userId;
 
   try {
-    const getQuery = () => {
-      if (
-        category &&
-        category.length > 0 &&
-        subcategory &&
-        subcategory.length > 0
-      ) {
-        return adminDb
-          .collection("transactions")
-          .where("userId", "==", user?.uid)
-          .where("category", "==", category)
-          .where("subcategory", "==", subcategory)
-          .orderBy("date", "desc")
-          .limit(limit);
-      } else if (category && category.length > 0) {
-        return adminDb
-          .collection("transactions")
-          .where("userId", "==", user?.uid)
-          .where("category", "==", category)
-          .orderBy("date", "desc")
-          .limit(limit);
-      }
-      return adminDb
-        .collection("transactions")
-        .where("userId", "==", user?.uid)
-        .orderBy("date", "desc")
-        .limit(limit);
-    };
-    let transactionQuery = getQuery();
+    let transactionQuery: FirebaseFirestore.Query = adminDb
+      .collection("transactions")
+      .where("userId", "==", userId);
+
+    if (accountId && accountId.length > 0) {
+      transactionQuery = transactionQuery.where("accountId", "==", accountId);
+    }
+    if (category && category.length > 0) {
+      transactionQuery = transactionQuery.where("category", "==", category);
+    }
+    if (subcategory && subcategory.length > 0) {
+      transactionQuery = transactionQuery.where(
+        "subcategory",
+        "==",
+        subcategory,
+      );
+    }
+    if (month && month.length > 0) {
+      const [year, monthNumber] = month.split("-").map(Number);
+      const startDate = new Date(Date.UTC(year, monthNumber - 1, 1));
+      const endDate = new Date(Date.UTC(year, monthNumber, 1));
+      transactionQuery = transactionQuery
+        .where("date", ">=", Timestamp.fromDate(startDate))
+        .where("date", "<", Timestamp.fromDate(endDate));
+    }
+
+    transactionQuery = transactionQuery.orderBy("date", "desc").limit(limit);
 
     if (lastTransaction) {
       const lastTransactionSnapshot = await adminDb
@@ -396,12 +425,7 @@ const updateTransaction = async (request: NextRequest) => {
       const newAccountId = newTransaction.accountId ?? oldAccountId;
       const newAmount = newTransaction.amount ?? oldAmount;
 
-      /*
-       * ----------------------------------------------------------
-       * Validate transaction-specific fields
-       * ----------------------------------------------------------
-       */
-
+      // Validate transaction-specific fields
       if (type !== "transfer" && newTransaction.toAccountId !== undefined) {
         return {
           success: false,
@@ -427,12 +451,7 @@ const updateTransaction = async (request: NextRequest) => {
           };
         }
 
-        /*
-         * --------------------------------------------------------
-         * TRANSFER
-         * --------------------------------------------------------
-         */
-
+        // TRANSFER
         const oldFromAccountRef = adminDb
           .collection("accounts")
           .doc(oldAccountId);
@@ -449,9 +468,7 @@ const updateTransaction = async (request: NextRequest) => {
           .collection("accounts")
           .doc(newToAccountId);
 
-        /*
-         * Read all affected accounts.
-         */
+        // Read all affected accounts.
         const accountRefs = [
           oldFromAccountRef,
           oldToAccountRef,
@@ -498,9 +515,7 @@ const updateTransaction = async (request: NextRequest) => {
           };
         }
 
-        /*
-         * Undo old transfer.
-         */
+        // Undo old transfer.
         tx.update(oldFromAccountRef, {
           balance: FieldValue.increment(oldAmount),
         });
@@ -509,9 +524,7 @@ const updateTransaction = async (request: NextRequest) => {
           balance: FieldValue.increment(-oldAmount),
         });
 
-        /*
-         * Apply new transfer.
-         */
+        // Apply new transfer.
         tx.update(newFromAccountRef, {
           balance: FieldValue.increment(-newAmount),
         });
@@ -543,15 +556,8 @@ const updateTransaction = async (request: NextRequest) => {
         };
       }
 
-      /*
-       * ----------------------------------------------------------
-       * INCOME / EXPENSE
-       * ----------------------------------------------------------
-       */
-
-      /*
-       * These transaction types shouldn't contain toAccountId.
-       */
+      // INCOME / EXPENSE
+      // These transaction types shouldn't contain toAccountId.
       if (newTransaction.toAccountId !== undefined) {
         return {
           success: false,
@@ -559,13 +565,9 @@ const updateTransaction = async (request: NextRequest) => {
         };
       }
 
-      /*
-       * Validate category/subcategory.
-       */
+      // Validate category/subcategory.
       const newCategory = newTransaction.category ?? existing.category;
-
       const newSubcategory = newTransaction.subcategory ?? existing.subcategory;
-
       const validSubcategories = categories[newCategory as keyof Categories];
 
       if (!validSubcategories || !validSubcategories.includes(newSubcategory)) {
@@ -578,7 +580,6 @@ const updateTransaction = async (request: NextRequest) => {
       }
 
       const oldAccountRef = adminDb.collection("accounts").doc(oldAccountId);
-
       const newAccountRef = adminDb.collection("accounts").doc(newAccountId);
 
       const accountRefs =
@@ -610,31 +611,27 @@ const updateTransaction = async (request: NextRequest) => {
        * expense => -amount
        */
       const oldBalanceEffect = type === "expense" ? -oldAmount : oldAmount;
-
       const newBalanceEffect = type === "expense" ? -newAmount : newAmount;
 
       if (oldAccountId === newAccountId) {
-        /*
-         * Same account:
-         * remove old effect and apply new effect.
-         */
+        // Same account: remove old effect and apply new effect after checking enough balance.
+        if (newAccount.balance < newBalanceEffect - oldBalanceEffect) {
+          return {
+            success: false,
+            message: "Insufficient balance in the account",
+          };
+        }
+
         tx.update(newAccountRef, {
           balance: FieldValue.increment(newBalanceEffect - oldBalanceEffect),
         });
       } else {
-        /*
-         * Account changed:
-         * undo transaction on old account
-         * and apply it to new account.
-         */
+        // Account changed: undo transaction on old account and apply it to new account.
         tx.update(oldAccountRef, {
           balance: FieldValue.increment(-oldBalanceEffect),
         });
 
-        /*
-         * For a new expense, make sure the new account
-         * has enough balance.
-         */
+        // For a new expense, make sure the new account has enough balance.
         if (type === "expense" && (newAccount.balance ?? 0) < newAmount) {
           return {
             success: false,
@@ -737,6 +734,12 @@ const updateTransaction = async (request: NextRequest) => {
 const deleteTransaction = async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams;
   const transactionId = searchParams.get("transactionId");
+  const user = request.user;
+  const month = new Date().toLocaleDateString("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+  });
+  const summaryId = `${user?.uid}_${month}`;
 
   if (!transactionId) {
     return new Response(
@@ -774,9 +777,38 @@ const deleteTransaction = async (request: NextRequest) => {
     }
 
     await adminDb.runTransaction(async (tx) => {
-      tx.update(adminDb.collection("accounts").doc(data.accountId), {
+      const fromAccountRef = adminDb.collection("accounts").doc(data.accountId);
+      const summaryRef = adminDb.collection("monthly-summary").doc(summaryId);
+
+      if (data.type === "transfer") {
+        const toAccountRef = adminDb
+          .collection("accounts")
+          .doc(data.toAccountId);
+        tx.update(toAccountRef, {
+          balance: FieldValue.increment(-data.amount),
+        });
+
+        tx.update(fromAccountRef, {
+          balance: FieldValue.increment(data.amount),
+        });
+
+        tx.delete(txnRef);
+        return;
+      }
+
+      tx.update(fromAccountRef, {
         balance: FieldValue.increment(data.amount),
       });
+
+      if (data.type === "income") {
+        tx.update(summaryRef, {
+          totalIncome: FieldValue.increment(-data.amount),
+        });
+      } else if (data.type === "expense") {
+        tx.update(summaryRef, {
+          totalExpense: FieldValue.increment(-data.amount),
+        });
+      }
 
       tx.delete(txnRef);
     });
