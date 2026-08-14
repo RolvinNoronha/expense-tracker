@@ -1,5 +1,5 @@
 export interface AddTransaction {
-  type: "expense" | "income";
+  type: "expense" | "income" | "transfer";
   category: string;
   subcategory: string;
   thirdCategory: string;
@@ -20,14 +20,15 @@ export interface APIResponse {
 export interface Transaction {
   transactionId: string;
   userId: string;
-  balanceId: string;
+  accountId: string;
   amount: number;
   currency: string;
+  toAccountId?: string;
   date: {
     _seconds: number;
     _nanoseconds: number;
   };
-  type: "expense" | "income";
+  type: "expense" | "income" | "transfer";
   category: string;
   subcategory: string;
   thirdCategory: string;
@@ -55,6 +56,20 @@ export interface Balance {
   };
   userId: string;
   balanceId: string;
+}
+
+export interface Account {
+  accountName: string;
+  balance: string;
+  userId: string;
+  createdAt: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
+  updatedAt: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
 }
 
 export interface OwedEntry {
