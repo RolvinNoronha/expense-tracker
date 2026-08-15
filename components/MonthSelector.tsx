@@ -1,6 +1,14 @@
 "use client";
 
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 
 interface MonthSelectorProps {
@@ -32,6 +40,33 @@ const MonthSelector = ({
 }: MonthSelectorProps) => {
   const currentMonth = getCurrentMonthString();
   const isCurrentMonth = selectedMonth === currentMonth;
+
+  // Generate selectable month options
+  const monthOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonthNum = now.getMonth();
+
+    // From next 3 months down to past 24 months
+    for (let i = -3; i <= 24; i++) {
+      const d = new Date(Date.UTC(currentYear, currentMonthNum - i, 1));
+      const year = d.getUTCFullYear();
+      const monthStr = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const val = `${year}-${monthStr}`;
+      const label = d.toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+      const isCurr = i === 0;
+      options.push({
+        value: val,
+        label: isCurr ? `${label} (Current)` : label,
+      });
+    }
+    return options;
+  }, []);
 
   const handlePrevMonth = () => {
     const [year, month] = selectedMonth.split("-").map(Number);
@@ -88,29 +123,35 @@ const MonthSelector = ({
             variant="ghost"
             size="icon"
             onClick={handlePrevMonth}
-            className="h-7 w-7 rounded-md"
+            className="h-7 w-7 rounded-md shrink-0"
             title="Previous Month"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
-          <input
-            type="month"
+          <Select
             value={selectedMonth}
-            onChange={(e) => {
-              if (e.target.value) {
-                onMonthChange(e.target.value);
-              }
+            onValueChange={(val) => {
+              if (val) onMonthChange(val);
             }}
-            className="text-xs font-semibold bg-transparent px-1.5 py-0.5 cursor-pointer focus:outline-hidden text-center max-w-32.5"
-            title="Select specific month"
-          />
+          >
+            <SelectTrigger className="h-7 border-none bg-transparent shadow-none px-2 text-xs font-semibold focus:ring-0 cursor-pointer min-w-32.5 justify-center">
+              <SelectValue>{formatMonthLabel(selectedMonth)}</SelectValue>
+            </SelectTrigger>
+            <SelectContent className="max-h-60">
+              {monthOptions.map((m) => (
+                <SelectItem key={m.value} value={m.value}>
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           <Button
             variant="ghost"
             size="icon"
             onClick={handleNextMonth}
-            className="h-7 w-7 rounded-md"
+            className="h-7 w-7 rounded-md shrink-0"
             title="Next Month"
           >
             <ChevronRight className="h-4 w-4" />

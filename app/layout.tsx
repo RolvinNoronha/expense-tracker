@@ -25,7 +25,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={cn(
-          `${openSans.className} min-h-screen bg-background antialiased`
+          `${openSans.className} min-h-screen bg-background antialiased`,
         )}
       >
         <Providers>{children}</Providers>

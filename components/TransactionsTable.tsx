@@ -1,6 +1,6 @@
 "use client";
 
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect, useState, useMemo } from "react";
 import { useInView } from "react-intersection-observer";
 import AppService from "@/services/AppService";
@@ -37,7 +37,6 @@ import { useFetchAccounts } from "@/hooks/hooks";
 
 const TransactionsTable = () => {
   const { ref, inView } = useInView();
-  const queryClient = useQueryClient();
 
   const { data: accountsData } = useFetchAccounts();
   const accounts: Account[] = accountsData?.data?.accounts || [];
@@ -51,7 +50,34 @@ const TransactionsTable = () => {
     return map;
   }, [accounts]);
 
+  // Generate selectable month options (e.g. Next month down to past 24 months)
+  const monthOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    for (let i = -1; i <= 24; i++) {
+      const d = new Date(Date.UTC(currentYear, currentMonth - i, 1));
+      const year = d.getUTCFullYear();
+      const monthNum = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const val = `${year}-${monthNum}`;
+      const label = d.toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+      const isCurrent = i === 0;
+      options.push({
+        value: val,
+        label: isCurrent ? `${label} (Current)` : label,
+      });
+    }
+    return options;
+  }, []);
+
   // Filter state
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
@@ -67,6 +93,7 @@ const TransactionsTable = () => {
     useInfiniteQuery({
       queryKey: [
         "transactions",
+        selectedMonth,
         selectedAccountId,
         selectedCategory,
         selectedSubcategory,
@@ -75,6 +102,7 @@ const TransactionsTable = () => {
         AppService.getTransactions({
           limit: 15,
           lastTransactionId: pageParam as string | undefined,
+          month: selectedMonth || undefined,
           accountId: selectedAccountId || undefined,
           category: selectedCategory || undefined,
           subcategory: selectedSubcategory || undefined,
@@ -142,12 +170,14 @@ const TransactionsTable = () => {
   };
 
   const clearAllFilters = () => {
+    setSelectedMonth("");
     setSelectedAccountId("");
     setSelectedCategory("");
     setSelectedSubcategory("");
   };
 
   const hasActiveFilters =
+    selectedMonth !== "" ||
     selectedAccountId !== "" ||
     selectedCategory !== "" ||
     selectedSubcategory !== "";
@@ -181,8 +211,37 @@ const TransactionsTable = () => {
       </CardHeader>
       <CardContent className="px-3 sm:px-6 pb-6">
         <div className="space-y-5">
-          {/* Filters Bar: Account, Category, Subcategory */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-secondary/30 rounded-xl border border-border">
+          {/* Filters Bar: Month, Account, Category, Subcategory */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-3 bg-secondary/30 rounded-xl border border-border">
+            {/* Filter by Month - Select dropdown instead of freeform text input */}
+            <div className="space-y-1">
+              <label className="block text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Filter by Month
+              </label>
+              <Select
+                value={selectedMonth || "ALL"}
+                onValueChange={(value) => {
+                  if (value === "ALL") {
+                    setSelectedMonth("");
+                    return;
+                  }
+                  setSelectedMonth(value);
+                }}
+              >
+                <SelectTrigger className="w-full bg-card text-xs sm:text-sm">
+                  <SelectValue placeholder="All Months" />
+                </SelectTrigger>
+                <SelectContent className="w-full max-h-60">
+                  <SelectItem value="ALL">All Months</SelectItem>
+                  {monthOptions.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Filter by Account */}
             <div className="space-y-1">
               <label className="block text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">

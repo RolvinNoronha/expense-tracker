@@ -7,6 +7,7 @@ const categories = {
     "home-insurance",
     "repairs",
     "property-tax",
+    "furnishing",
   ],
   vehicle: ["fuel", "maintenance", "parking-fees", "tolls"],
   transportation: ["metro", "bus", "cab", "auto", "bike"],
@@ -31,6 +32,7 @@ const categories = {
     "skincare-products",
     "spa-visits",
   ],
+  shopping: ["clothing", "footwear", "accessories", "maintenance-and-care"],
   education: ["tuition-fees", "books", "online-courses", "workshops"],
   family: [
     "childcare",
@@ -59,7 +61,6 @@ const categories = {
   miscellaneous: [
     "pet-care",
     "legal-fees",
-    "subscriptions",
     "bank-fees",
     "taxes",
     "miscellaneous",

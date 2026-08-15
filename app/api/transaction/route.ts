@@ -273,7 +273,7 @@ const getTransaction = async (request: NextRequest) => {
         subcategory,
       );
     }
-    if (month && month.length > 0) {
+    if (month && /^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
       const [year, monthNumber] = month.split("-").map(Number);
       const startDate = new Date(Date.UTC(year, monthNumber - 1, 1));
       const endDate = new Date(Date.UTC(year, monthNumber, 1));
